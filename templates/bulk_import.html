@@ -1,0 +1,487 @@
+{% extends "base.html" %}
+
+{% block title %}Bulk Import{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="row">
+        <div class="col-md-12">
+            <h2 class="mb-4">
+                <i class="fas fa-upload"></i> Bulk Import Data
+            </h2>
+        </div>
+    </div>
+
+    <!-- Import Types -->
+    <div class="row mb-4">
+        <div class="col-md-12">
+            <div class="card">
+                <div class="card-header bg-primary text-white">
+                    <h5 class="mb-0">
+                        <i class="fas fa-file-import"></i> Select Import Type
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="card border-primary">
+                                <div class="card-body text-center">
+                                    <i class="fas fa-book fa-3x text-primary mb-3"></i>
+                                    <h5>Import Books</h5>
+                                    <p class="text-muted">Upload a CSV file containing book information</p>
+                                    <button class="btn btn-primary" onclick="selectImportType('books')">
+                                        <i class="fas fa-book"></i> Import Books
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="card border-success">
+                                <div class="card-body text-center">
+                                    <i class="fas fa-users fa-3x text-success mb-3"></i>
+                                    <h5>Import Members</h5>
+                                    <p class="text-muted">Upload a CSV file containing member information</p>
+                                    <button class="btn btn-success" onclick="selectImportType('members')">
+                                        <i class="fas fa-users"></i> Import Members
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Import Form -->
+    <div class="row" id="importForm" style="display: none;">
+        <div class="col-md-8">
+            <div class="card">
+                <div class="card-header" id="importFormHeader">
+                    <h5 class="mb-0" id="importFormTitle">
+                        <i class="fas fa-upload"></i> Upload File
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <form method="POST" enctype="multipart/form-data" id="bulkImportForm">
+                        <input type="hidden" id="importType" name="import_type">
+                        
+                        <div class="mb-3">
+                            <label for="csvFile" class="form-label">
+                                <i class="fas fa-file-csv"></i> CSV File
+                            </label>
+                            <input type="file" class="form-control" id="csvFile" name="csv_file" 
+                                   accept=".csv" required>
+                            <div class="form-text">Select a CSV file to import. Maximum file size: 10MB</div>
+                        </div>
+
+                        <div class="mb-3">
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" id="hasHeaders" 
+                                       name="has_headers" checked>
+                                <label class="form-check-label" for="hasHeaders">
+                                    First row contains column headers
+                                </label>
+                            </div>
+                        </div>
+
+                        <div class="mb-3">
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" id="validateData" 
+                                       name="validate_data" checked>
+                                <label class="form-check-label" for="validateData">
+                                    Validate data before importing
+                                </label>
+                            </div>
+                        </div>
+
+                        <div class="mb-3">
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" id="skipDuplicates" 
+                                       name="skip_duplicates" checked>
+                                <label class="form-check-label" for="skipDuplicates">
+                                    Skip duplicate entries
+                                </label>
+                            </div>
+                        </div>
+
+                        <div class="d-flex justify-content-between">
+                            <button type="button" class="btn btn-outline-secondary" onclick="cancelImport()">
+                                <i class="fas fa-times"></i> Cancel
+                            </button>
+                            <div>
+                                <button type="button" class="btn btn-outline-info me-2" onclick="previewData()">
+                                    <i class="fas fa-eye"></i> Preview Data
+                                </button>
+                                <button type="submit" class="btn btn-primary">
+                                    <i class="fas fa-upload"></i> Start Import
+                                </button>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <!-- Format Guide -->
+        <div class="col-md-4">
+            <div class="card">
+                <div class="card-header bg-info text-white">
+                    <h6 class="mb-0">
+                        <i class="fas fa-info-circle"></i> CSV Format Guide
+                    </h6>
+                </div>
+                <div class="card-body">
+                    <div id="formatGuide">
+                        <!-- Dynamic content based on import type -->
+                    </div>
+                </div>
+            </div>
+
+            <!-- Sample Files -->
+            <div class="card mt-3">
+                <div class="card-header bg-success text-white">
+                    <h6 class="mb-0">
+                        <i class="fas fa-download"></i> Sample Files
+                    </h6>
+                </div>
+                <div class="card-body">
+                    <div class="d-grid gap-2">
+                        <button class="btn btn-outline-primary btn-sm" onclick="downloadSample('books')">
+                            <i class="fas fa-file-csv"></i> Books Sample CSV
+                        </button>
+                        <button class="btn btn-outline-success btn-sm" onclick="downloadSample('members')">
+                            <i class="fas fa-file-csv"></i> Members Sample CSV
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Import History -->
+    <div class="row mt-4">
+        <div class="col-md-12">
+            <div class="card">
+                <div class="card-header bg-secondary text-white">
+                    <h5 class="mb-0">
+                        <i class="fas fa-history"></i> Recent Import History
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table class="table table-striped">
+                            <thead>
+                                <tr>
+                                    <th>Date</th>
+                                    <th>Type</th>
+                                    <th>File Name</th>
+                                    <th>Records Processed</th>
+                                    <th>Success</th>
+                                    <th>Errors</th>
+                                    <th>Status</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td>2024-01-15 10:30</td>
+                                    <td><span class="badge bg-primary">Books</span></td>
+                                    <td>new_books_2024.csv</td>
+                                    <td>150</td>
+                                    <td><span class="text-success">145</span></td>
+                                    <td><span class="text-danger">5</span></td>
+                                    <td><span class="badge bg-success">Completed</span></td>
+                                    <td>
+                                        <button class="btn btn-sm btn-outline-info" onclick="viewImportDetails(1)">
+                                            <i class="fas fa-eye"></i> Details
+                                        </button>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td>2024-01-14 15:45</td>
+                                    <td><span class="badge bg-success">Members</span></td>
+                                    <td>student_list_spring.csv</td>
+                                    <td>75</td>
+                                    <td><span class="text-success">72</span></td>
+                                    <td><span class="text-danger">3</span></td>
+                                    <td><span class="badge bg-success">Completed</span></td>
+                                    <td>
+                                        <button class="btn btn-sm btn-outline-info" onclick="viewImportDetails(2)">
+                                            <i class="fas fa-eye"></i> Details
+                                        </button>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td>2024-01-10 09:15</td>
+                                    <td><span class="badge bg-primary">Books</span></td>
+                                    <td>fiction_collection.csv</td>
+                                    <td>-</td>
+                                    <td>-</td>
+                                    <td>-</td>
+                                    <td><span class="badge bg-danger">Failed</span></td>
+                                    <td>
+                                        <button class="btn btn-sm btn-outline-danger" onclick="viewImportDetails(3)">
+                                            <i class="fas fa-exclamation"></i> Error Log
+                                        </button>
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Preview Modal -->
+<div class="modal fade" id="previewModal" tabindex="-1" aria-labelledby="previewModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-xl">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="previewModalLabel">
+                    <i class="fas fa-eye"></i> Data Preview
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <div id="previewContent">
+                    <div class="text-center">
+                        <i class="fas fa-spinner fa-spin fa-2x"></i>
+                        <p class="mt-2">Loading preview...</p>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                <button type="button" class="btn btn-primary" onclick="proceedWithImport()">
+                    <i class="fas fa-check"></i> Looks Good - Proceed
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+function selectImportType(type) {
+    document.getElementById('importType').value = type;
+    document.getElementById('importForm').style.display = 'block';
+    
+    // Update form header
+    const header = document.getElementById('importFormHeader');
+    const title = document.getElementById('importFormTitle');
+    
+    if (type === 'books') {
+        header.className = 'card-header bg-primary text-white';
+        title.innerHTML = '<i class="fas fa-book"></i> Import Books';
+        showBooksFormatGuide();
+    } else if (type === 'members') {
+        header.className = 'card-header bg-success text-white';
+        title.innerHTML = '<i class="fas fa-users"></i> Import Members';
+        showMembersFormatGuide();
+    }
+    
+    // Scroll to form
+    document.getElementById('importForm').scrollIntoView({ behavior: 'smooth' });
+}
+
+function showBooksFormatGuide() {
+    document.getElementById('formatGuide').innerHTML = `
+        <h6>Required Columns:</h6>
+        <ul class="list-unstyled">
+            <li><strong>isbn:</strong> Unique book identifier</li>
+            <li><strong>title:</strong> Book title</li>
+            <li><strong>author:</strong> Author name</li>
+            <li><strong>genre:</strong> Book category</li>
+            <li><strong>publication_year:</strong> Year published</li>
+        </ul>
+        <hr>
+        <h6>Optional Columns:</h6>
+        <ul class="list-unstyled">
+            <li><strong>publisher:</strong> Publisher name</li>
+            <li><strong>pages:</strong> Number of pages</li>
+            <li><strong>description:</strong> Book description</li>
+        </ul>
+        <hr>
+        <small class="text-muted">
+            <strong>Note:</strong> ISBN must be unique. Duplicate ISBNs will be skipped if the option is enabled.
+        </small>
+    `;
+}
+
+function showMembersFormatGuide() {
+    document.getElementById('formatGuide').innerHTML = `
+        <h6>Required Columns:</h6>
+        <ul class="list-unstyled">
+            <li><strong>name:</strong> Full name</li>
+            <li><strong>contact_info:</strong> Email or phone</li>
+        </ul>
+        <hr>
+        <h6>Optional Columns:</h6>
+        <ul class="list-unstyled">
+            <li><strong>address:</strong> Home address</li>
+            <li><strong>date_of_birth:</strong> Date of birth (YYYY-MM-DD)</li>
+            <li><strong>membership_tier:</strong> Tier ID (1-3)</li>
+        </ul>
+        <hr>
+        <small class="text-muted">
+            <strong>Note:</strong> Contact info should be unique. Duplicate contacts will be skipped if the option is enabled.
+        </small>
+    `;
+}
+
+function cancelImport() {
+    document.getElementById('importForm').style.display = 'none';
+    document.getElementById('bulkImportForm').reset();
+}
+
+function previewData() {
+    const fileInput = document.getElementById('csvFile');
+    if (!fileInput.files[0]) {
+        alert('Please select a CSV file first.');
+        return;
+    }
+    
+    // Show modal
+    const modal = new bootstrap.Modal(document.getElementById('previewModal'));
+    modal.show();
+    
+    // Simulate data preview
+    setTimeout(() => {
+        const type = document.getElementById('importType').value;
+        let sampleData = '';
+        
+        if (type === 'books') {
+            sampleData = `
+                <div class="alert alert-info">
+                    <i class="fas fa-info-circle"></i> Preview of first 5 rows from your CSV file:
+                </div>
+                <table class="table table-striped table-sm">
+                    <thead>
+                        <tr>
+                            <th>ISBN</th>
+                            <th>Title</th>
+                            <th>Author</th>
+                            <th>Genre</th>
+                            <th>Year</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td>9781234567890</td>
+                            <td>Sample Book Title</td>
+                            <td>Author Name</td>
+                            <td>Fiction</td>
+                            <td>2023</td>
+                        </tr>
+                        <tr>
+                            <td>9781234567891</td>
+                            <td>Another Great Book</td>
+                            <td>Different Author</td>
+                            <td>Science</td>
+                            <td>2022</td>
+                        </tr>
+                    </tbody>
+                </table>
+                <div class="alert alert-success">
+                    <i class="fas fa-check"></i> Data validation passed: 2 valid records found
+                </div>
+            `;
+        } else {
+            sampleData = `
+                <div class="alert alert-info">
+                    <i class="fas fa-info-circle"></i> Preview of first 5 rows from your CSV file:
+                </div>
+                <table class="table table-striped table-sm">
+                    <thead>
+                        <tr>
+                            <th>Name</th>
+                            <th>Contact Info</th>
+                            <th>Address</th>
+                            <th>Membership Tier</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td>John Doe</td>
+                            <td>john.doe@email.com</td>
+                            <td>123 Main St</td>
+                            <td>1</td>
+                        </tr>
+                        <tr>
+                            <td>Jane Smith</td>
+                            <td>jane.smith@email.com</td>
+                            <td>456 Oak Ave</td>
+                            <td>2</td>
+                        </tr>
+                    </tbody>
+                </table>
+                <div class="alert alert-success">
+                    <i class="fas fa-check"></i> Data validation passed: 2 valid records found
+                </div>
+            `;
+        }
+        
+        document.getElementById('previewContent').innerHTML = sampleData;
+    }, 1500);
+}
+
+function proceedWithImport() {
+    const modal = bootstrap.Modal.getInstance(document.getElementById('previewModal'));
+    modal.hide();
+    
+    // Submit the form
+    document.getElementById('bulkImportForm').submit();
+}
+
+function downloadSample(type) {
+    let csvContent = '';
+    let filename = '';
+    
+    if (type === 'books') {
+        csvContent = "isbn,title,author,genre,publication_year\\n9781234567890,Sample Book Title,Author Name,Fiction,2023\\n9781234567891,Another Great Book,Different Author,Science,2022";
+        filename = 'books_sample.csv';
+    } else if (type === 'members') {
+        csvContent = "name,contact_info,address,date_of_birth,membership_tier\\nJohn Doe,john.doe@email.com,123 Main St,1990-01-15,1\\nJane Smith,jane.smith@email.com,456 Oak Ave,1985-05-20,2";
+        filename = 'members_sample.csv';
+    }
+    
+    const blob = new Blob([csvContent], { type: 'text/csv' });
+    const url = window.URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = filename;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    window.URL.revokeObjectURL(url);
+}
+
+function viewImportDetails(importId) {
+    alert(`Viewing details for import ID ${importId}. This would show detailed import logs, errors, and statistics.`);
+}
+
+// Form submission handler
+document.getElementById('bulkImportForm').addEventListener('submit', function(e) {
+    e.preventDefault();
+    
+    // Show progress
+    const submitBtn = this.querySelector('button[type="submit"]');
+    const originalText = submitBtn.innerHTML;
+    submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Importing...';
+    submitBtn.disabled = true;
+    
+    // Simulate import process
+    setTimeout(() => {
+        alert('Import completed! Check the import history below for details.');
+        submitBtn.innerHTML = originalText;
+        submitBtn.disabled = false;
+        
+        // Reset form
+        this.reset();
+        document.getElementById('importForm').style.display = 'none';
+    }, 3000);
+});
+</script>
+{% endblock %}

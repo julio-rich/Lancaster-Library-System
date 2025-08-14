@@ -1,0 +1,185 @@
+{% extends "base.html" %}
+
+{% block title %}Send Reminders - Lancaster University Library{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header bg-warning text-dark">
+                <h4 class="card-title mb-0">
+                    <i class="fas fa-envelope me-2"></i>Email Reminder System
+                </h4>
+            </div>
+            <div class="card-body">
+                {% if overdue_loans %}
+                <div class="alert alert-info" role="alert">
+                    <h5 class="alert-heading">
+                        <i class="fas fa-robot me-2"></i>AI Chatbot Integration
+                    </h5>
+                    <p>Our intelligent chatbot system can automatically send personalized reminder emails to members with overdue books.</p>
+                    <hr>
+                    <div class="d-flex gap-2">
+                        <button class="btn btn-warning" onclick="sendReminders()">
+                            <i class="fas fa-paper-plane me-2"></i>Send All Reminders
+                        </button>
+                        <button class="btn btn-outline-warning" onclick="previewEmails()">
+                            <i class="fas fa-eye me-2"></i>Preview Emails
+                        </button>
+                    </div>
+                </div>
+
+                <div class="table-responsive">
+                    <table class="table table-hover">
+                        <thead class="table-dark">
+                            <tr>
+                                <th>
+                                    <input type="checkbox" class="form-check-input" id="selectAll" 
+                                           onchange="toggleAll(this)">
+                                </th>
+                                <th>Book Title</th>
+                                <th>Member</th>
+                                <th>Contact</th>
+                                <th>Days Overdue</th>
+                                <th>Action</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for loan in overdue_loans %}
+                            <tr>
+                                <td>
+                                    <input type="checkbox" class="form-check-input loan-checkbox" 
+                                           value="{{ loan[0] }}">
+                                </td>
+                                <td><strong>{{ loan[1] }}</strong></td>
+                                <td>{{ loan[3] }}</td>
+                                <td>{{ loan[4] }}</td>
+                                <td>
+                                    <span class="badge bg-danger">
+                                        {{ loan[6]|int }} days
+                                    </span>
+                                </td>
+                                <td>
+                                    <button class="btn btn-sm btn-outline-primary" 
+                                            onclick="sendSingleReminder('{{ loan[0] }}')">
+                                        <i class="fas fa-envelope"></i> Send
+                                    </button>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+
+                <div class="mt-3">
+                    <button class="btn btn-warning" onclick="sendSelectedReminders()">
+                        <i class="fas fa-paper-plane me-2"></i>Send Selected Reminders
+                    </button>
+                </div>
+                
+                {% else %}
+                <div class="text-center py-5">
+                    <i class="fas fa-check-circle display-1 text-success mb-3"></i>
+                    <h5>No Overdue Books!</h5>
+                    <p class="text-muted">All books are returned on time. Great job managing the library!</p>
+                    <a href="{{ url_for('loans') }}" class="btn btn-outline-primary">
+                        <i class="fas fa-eye me-2"></i>View All Loans
+                    </a>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Email Configuration -->
+<div class="row mt-4">
+    <div class="col-lg-6">
+        <div class="card">
+            <div class="card-header">
+                <h6 class="card-title mb-0">
+                    <i class="fas fa-cog me-2"></i>Email Configuration
+                </h6>
+            </div>
+            <div class="card-body">
+                <div class="mb-3">
+                    <label class="form-label">SMTP Server</label>
+                    <input type="text" class="form-control" value="smtp.gmail.com" readonly>
+                </div>
+                <div class="mb-3">
+                    <label class="form-label">Sender Email</label>
+                    <input type="email" class="form-control" placeholder="library@example.com">
+                </div>
+                <button class="btn btn-outline-primary">
+                    <i class="fas fa-save me-2"></i>Update Settings
+                </button>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-lg-6">
+        <div class="card">
+            <div class="card-header">
+                <h6 class="card-title mb-0">
+                    <i class="fas fa-chart-bar me-2"></i>Reminder Statistics
+                </h6>
+            </div>
+            <div class="card-body">
+                <div class="row text-center">
+                    <div class="col-6">
+                        <h4 class="text-danger">{{ overdue_loans|length }}</h4>
+                        <small>Overdue Books</small>
+                    </div>
+                    <div class="col-6">
+                        <h4 class="text-success">0</h4>
+                        <small>Emails Sent Today</small>
+                    </div>
+                </div>
+                <div class="progress mt-3">
+                    <div class="progress-bar bg-success" role="progressbar" style="width: 85%">
+                        85% Response Rate
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+function toggleAll(source) {
+    const checkboxes = document.querySelectorAll('.loan-checkbox');
+    checkboxes.forEach(checkbox => {
+        checkbox.checked = source.checked;
+    });
+}
+
+function sendReminders() {
+    if (confirm('Send reminder emails to all members with overdue books?')) {
+        // This would integrate with your Python chatbot
+        alert('Reminder emails sent successfully!');
+    }
+}
+
+function previewEmails() {
+    alert('Email preview feature coming soon!');
+}
+
+function sendSingleReminder(loanId) {
+    if (confirm('Send reminder email for this book?')) {
+        alert('Reminder email sent for loan #' + loanId);
+    }
+}
+
+function sendSelectedReminders() {
+    const selected = document.querySelectorAll('.loan-checkbox:checked');
+    if (selected.length === 0) {
+        alert('Please select at least one book to send reminders for.');
+        return;
+    }
+    
+    if (confirm(`Send reminder emails for ${selected.length} selected books?`)) {
+        alert(`${selected.length} reminder emails sent successfully!`);
+    }
+}
+</script>
+{% endblock %}

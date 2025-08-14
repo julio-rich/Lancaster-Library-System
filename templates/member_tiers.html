@@ -1,0 +1,541 @@
+{% extends "base.html" %}
+
+{% block title %}Member Tiers - Lancaster University Library{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <div>
+                    <h2>
+                        <i class="fas fa-layer-group me-3"></i>Membership Tiers
+                    </h2>
+                    <p class="text-muted">Configure membership levels and their privileges</p>
+                </div>
+                <div>
+                    <button class="btn btn-primary me-2" data-bs-toggle="modal" data-bs-target="#createTierModal">
+                        <i class="fas fa-plus-circle me-2"></i>Add New Tier
+                    </button>
+                    <a href="{{ url_for('librarian_dashboard') }}" class="btn btn-outline-secondary">
+                        <i class="fas fa-arrow-left me-2"></i>Back to Dashboard
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Tier Overview Cards -->
+    <div class="row g-4 mb-4">
+        {% if tiers %}
+        {% for tier in tiers %}
+        <div class="col-lg-4 col-md-6">
+            <div class="card tier-card h-100 {% if tier[1] == 'Premium' %}border-warning{% elif tier[1] == 'Student' %}border-info{% else %}border-secondary{% endif %}">
+                <div class="card-header {% if tier[1] == 'Premium' %}bg-warning text-dark{% elif tier[1] == 'Student' %}bg-info text-white{% else %}bg-secondary text-white{% endif %}">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <h5 class="mb-0">
+                            <i class="fas {% if tier[1] == 'Premium' %}fa-crown{% elif tier[1] == 'Student' %}fa-graduation-cap{% else %}fa-user{% endif %} me-2"></i>
+                            {{ tier[1] }}
+                        </h5>
+                        <div class="dropdown">
+                            <button class="btn btn-sm btn-outline-{% if tier[1] == 'Premium' %}dark{% else %}light{% endif %} dropdown-toggle" 
+                                    type="button" data-bs-toggle="dropdown">
+                                <i class="fas fa-cog"></i>
+                            </button>
+                            <ul class="dropdown-menu">
+                                <li><a class="dropdown-item" href="#" onclick="editTier({{ tier[0] }}, '{{ tier[1] }}', {{ tier[2] }}, {{ tier[3] }}, {{ tier[4] }}, '{{ tier[5] or '' }}')">
+                                    <i class="fas fa-edit me-2"></i>Edit Tier
+                                </a></li>
+                                {% if tier[1] not in ['Standard', 'Premium', 'Student'] %}
+                                <li><a class="dropdown-item text-danger" href="#" onclick="deleteTier({{ tier[0] }}, '{{ tier[1] }}')">
+                                    <i class="fas fa-trash me-2"></i>Delete Tier
+                                </a></li>
+                                {% endif %}
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+                <div class="card-body">
+                    <div class="tier-details">
+                        <div class="row text-center mb-3">
+                            <div class="col-4">
+                                <div class="tier-stat">
+                                    <h4 class="text-primary">{{ tier[2] }}</h4>
+                                    <small class="text-muted">Max Books</small>
+                                </div>
+                            </div>
+                            <div class="col-4">
+                                <div class="tier-stat">
+                                    <h4 class="text-success">{{ tier[3] }}</h4>
+                                    <small class="text-muted">Days</small>
+                                </div>
+                            </div>
+                            <div class="col-4">
+                                <div class="tier-stat">
+                                    <h4 class="text-warning">${{ "%.2f"|format(tier[4]) }}</h4>
+                                    <small class="text-muted">Fine/Day</small>
+                                </div>
+                            </div>
+                        </div>
+                        {% if tier[5] %}
+                        <div class="tier-description">
+                            <p class="text-muted small">{{ tier[5] }}</p>
+                        </div>
+                        {% endif %}
+                    </div>
+                </div>
+                <div class="card-footer bg-light">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <small class="text-muted">
+                            <i class="fas fa-users me-1"></i>
+                            Members: <span class="fw-bold">0</span> <!-- This would be populated with actual member count -->
+                        </small>
+                        <button class="btn btn-sm btn-outline-primary" 
+                                onclick="viewTierMembers({{ tier[0] }}, '{{ tier[1] }}')">
+                            <i class="fas fa-eye me-1"></i>View Members
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+        {% else %}
+        <div class="col-12">
+            <div class="text-center py-5">
+                <i class="fas fa-layer-group fa-4x text-muted mb-4"></i>
+                <h4>No Membership Tiers Found</h4>
+                <p class="text-muted mb-4">Create membership tiers to organize library members by privileges.</p>
+                <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#createTierModal">
+                    <i class="fas fa-plus-circle me-2"></i>Create First Tier
+                </button>
+            </div>
+        </div>
+        {% endif %}
+    </div>
+
+    <!-- Tier Comparison Table -->
+    {% if tiers %}
+    <div class="card shadow-sm">
+        <div class="card-header bg-light">
+            <h5 class="mb-0"><i class="fas fa-table me-2"></i>Tier Comparison</h5>
+        </div>
+        <div class="card-body p-0">
+            <div class="table-responsive">
+                <table class="table table-hover mb-0">
+                    <thead class="table-dark">
+                        <tr>
+                            <th>Tier Name</th>
+                            <th>Max Books</th>
+                            <th>Loan Period</th>
+                            <th>Fine per Day</th>
+                            <th>Description</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for tier in tiers %}
+                        <tr>
+                            <td>
+                                <div class="d-flex align-items-center">
+                                    <i class="fas {% if tier[1] == 'Premium' %}fa-crown text-warning{% elif tier[1] == 'Student' %}fa-graduation-cap text-info{% else %}fa-user text-secondary{% endif %} me-2"></i>
+                                    <strong>{{ tier[1] }}</strong>
+                                </div>
+                            </td>
+                            <td>
+                                <span class="badge bg-primary fs-6">{{ tier[2] }} books</span>
+                            </td>
+                            <td>
+                                <span class="badge bg-success fs-6">{{ tier[3] }} days</span>
+                            </td>
+                            <td>
+                                <span class="badge bg-warning fs-6">${{ "%.2f"|format(tier[4]) }}</span>
+                            </td>
+                            <td>
+                                <span class="text-muted">{{ tier[5] or 'No description' }}</span>
+                            </td>
+                            <td>
+                                <div class="btn-group btn-group-sm">
+                                    <button class="btn btn-outline-primary" 
+                                            onclick="editTier({{ tier[0] }}, '{{ tier[1] }}', {{ tier[2] }}, {{ tier[3] }}, {{ tier[4] }}, '{{ tier[5] or '' }}')"
+                                            data-bs-toggle="tooltip" title="Edit Tier">
+                                        <i class="fas fa-edit"></i>
+                                    </button>
+                                    <button class="btn btn-outline-info" 
+                                            onclick="viewTierMembers({{ tier[0] }}, '{{ tier[1] }}')"
+                                            data-bs-toggle="tooltip" title="View Members">
+                                        <i class="fas fa-users"></i>
+                                    </button>
+                                    {% if tier[1] not in ['Standard', 'Premium', 'Student'] %}
+                                    <button class="btn btn-outline-danger" 
+                                            onclick="deleteTier({{ tier[0] }}, '{{ tier[1] }}')"
+                                            data-bs-toggle="tooltip" title="Delete Tier">
+                                        <i class="fas fa-trash"></i>
+                                    </button>
+                                    {% endif %}
+                                </div>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+</div>
+
+<!-- Create/Edit Tier Modal -->
+<div class="modal fade" id="createTierModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">
+                    <i class="fas fa-plus-circle me-2"></i>Create New Tier
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <form method="POST" action="{{ url_for('create_tier') }}">
+                <div class="modal-body">
+                    <input type="hidden" id="tierId" name="tier_id">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="tierName" class="form-label">Tier Name <span class="text-danger">*</span></label>
+                                <input type="text" class="form-control" id="tierName" name="tier_name" required>
+                                <div class="form-text">Enter a unique name for this membership tier</div>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="maxBooks" class="form-label">Maximum Books <span class="text-danger">*</span></label>
+                                <input type="number" class="form-control" id="maxBooks" name="max_books" min="1" max="20" required>
+                                <div class="form-text">Maximum books that can be borrowed</div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="loanPeriod" class="form-label">Loan Period (Days) <span class="text-danger">*</span></label>
+                                <input type="number" class="form-control" id="loanPeriod" name="loan_period" min="1" max="365" required>
+                                <div class="form-text">Number of days books can be borrowed</div>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="finePerDay" class="form-label">Fine per Day ($) <span class="text-danger">*</span></label>
+                                <input type="number" class="form-control" id="finePerDay" name="fine_per_day" step="0.01" min="0" required>
+                                <div class="form-text">Daily fine for overdue books</div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="mb-3">
+                        <label for="description" class="form-label">Description</label>
+                        <textarea class="form-control" id="description" name="description" rows="3" 
+                                  placeholder="Describe the benefits and features of this tier..."></textarea>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Preview</label>
+                        <div id="tierPreview" class="border rounded p-3 bg-light">
+                            <div class="text-center">
+                                <i class="fas fa-user fa-2x text-muted mb-2"></i>
+                                <h6>Tier Preview</h6>
+                                <small class="text-muted">Fill in the form to see a preview</small>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-primary">
+                        <i class="fas fa-save me-2"></i><span id="submitText">Create Tier</span>
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Tier Members Modal -->
+<div class="modal fade" id="tierMembersModal" tabindex="-1">
+    <div class="modal-dialog modal-xl">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">
+                    <i class="fas fa-users me-2"></i><span id="tierMembersTitle">Tier Members</span>
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div id="tierMembersContent">
+                    <div class="text-center">
+                        <div class="spinner-border" role="status">
+                            <span class="visually-hidden">Loading...</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+// Form preview functionality
+function updatePreview() {
+    const name = document.getElementById('tierName').value;
+    const maxBooks = document.getElementById('maxBooks').value;
+    const loanPeriod = document.getElementById('loanPeriod').value;
+    const finePerDay = document.getElementById('finePerDay').value;
+    const description = document.getElementById('description').value;
+    
+    const preview = document.getElementById('tierPreview');
+    
+    if (name || maxBooks || loanPeriod || finePerDay) {
+        preview.innerHTML = `
+            <div class="text-center">
+                <i class="fas fa-layer-group fa-2x text-primary mb-2"></i>
+                <h6>${name || 'Tier Name'}</h6>
+                <div class="row">
+                    <div class="col-4">
+                        <div class="text-primary"><strong>${maxBooks || '0'}</strong></div>
+                        <small class="text-muted">Max Books</small>
+                    </div>
+                    <div class="col-4">
+                        <div class="text-success"><strong>${loanPeriod || '0'}</strong></div>
+                        <small class="text-muted">Days</small>
+                    </div>
+                    <div class="col-4">
+                        <div class="text-warning"><strong>$${finePerDay || '0.00'}</strong></div>
+                        <small class="text-muted">Fine/Day</small>
+                    </div>
+                </div>
+                ${description ? `<p class="mt-2 mb-0 small text-muted">${description}</p>` : ''}
+            </div>
+        `;
+    } else {
+        preview.innerHTML = `
+            <div class="text-center">
+                <i class="fas fa-user fa-2x text-muted mb-2"></i>
+                <h6>Tier Preview</h6>
+                <small class="text-muted">Fill in the form to see a preview</small>
+            </div>
+        `;
+    }
+}
+
+// Add event listeners for real-time preview
+document.addEventListener('DOMContentLoaded', function() {
+    const inputs = ['tierName', 'maxBooks', 'loanPeriod', 'finePerDay', 'description'];
+    inputs.forEach(id => {
+        document.getElementById(id).addEventListener('input', updatePreview);
+    });
+});
+
+function editTier(tierId, name, maxBooks, loanPeriod, finePerDay, description) {
+    // Populate form for editing
+    document.getElementById('tierId').value = tierId;
+    document.getElementById('tierName').value = name;
+    document.getElementById('maxBooks').value = maxBooks;
+    document.getElementById('loanPeriod').value = loanPeriod;
+    document.getElementById('finePerDay').value = finePerDay;
+    document.getElementById('description').value = description;
+    
+    // Change modal title and button text
+    document.querySelector('#createTierModal .modal-title').innerHTML = '<i class="fas fa-edit me-2"></i>Edit Tier';
+    document.getElementById('submitText').textContent = 'Update Tier';
+    
+    // Update form action
+    document.querySelector('#createTierModal form').action = '{{ url_for("update_tier") }}';
+    
+    updatePreview();
+    
+    const modal = new bootstrap.Modal(document.getElementById('createTierModal'));
+    modal.show();
+}
+
+function deleteTier(tierId, tierName) {
+    if (confirm(`Are you sure you want to delete the "${tierName}" tier? This action cannot be undone.`)) {
+        fetch(`/delete_tier/${tierId}`, {
+            method: 'DELETE',
+            headers: {
+                'Content-Type': 'application/json',
+            }
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                location.reload();
+            } else {
+                alert('Error deleting tier: ' + data.error);
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            alert('An error occurred while deleting the tier.');
+        });
+    }
+}
+
+function viewTierMembers(tierId, tierName) {
+    document.getElementById('tierMembersTitle').textContent = `${tierName} Members`;
+    
+    const modal = new bootstrap.Modal(document.getElementById('tierMembersModal'));
+    modal.show();
+    
+    // Load members for this tier
+    fetch(`/api/tier_members/${tierId}`)
+        .then(response => response.json())
+        .then(data => {
+            const content = document.getElementById('tierMembersContent');
+            if (data.success && data.members.length > 0) {
+                let membersHtml = `
+                    <div class="table-responsive">
+                        <table class="table table-hover">
+                            <thead class="table-light">
+                                <tr>
+                                    <th>Member ID</th>
+                                    <th>Name</th>
+                                    <th>Contact</th>
+                                    <th>Registration Date</th>
+                                    <th>Status</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                `;
+                
+                data.members.forEach(member => {
+                    membersHtml += `
+                        <tr>
+                            <td><code>${member.id}</code></td>
+                            <td><strong>${member.name}</strong></td>
+                            <td>${member.contact}</td>
+                            <td><small class="text-muted">${member.registration_date}</small></td>
+                            <td><span class="badge bg-${member.status === 'active' ? 'success' : 'secondary'}">${member.status}</span></td>
+                        </tr>
+                    `;
+                });
+                
+                membersHtml += '</tbody></table></div>';
+                content.innerHTML = membersHtml;
+            } else {
+                content.innerHTML = `
+                    <div class="text-center py-4">
+                        <i class="fas fa-users fa-3x text-muted mb-3"></i>
+                        <h5>No Members</h5>
+                        <p class="text-muted">No members are assigned to the ${tierName} tier yet.</p>
+                    </div>
+                `;
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            document.getElementById('tierMembersContent').innerHTML = `
+                <div class="alert alert-danger">
+                    <i class="fas fa-exclamation-triangle me-2"></i>
+                    Error loading members. Please try again.
+                </div>
+            `;
+        });
+}
+
+// Reset modal when it's closed
+document.getElementById('createTierModal').addEventListener('hidden.bs.modal', function() {
+    // Reset form
+    document.getElementById('tierId').value = '';
+    document.querySelector('#createTierModal form').reset();
+    
+    // Reset modal title and button text
+    document.querySelector('#createTierModal .modal-title').innerHTML = '<i class="fas fa-plus-circle me-2"></i>Create New Tier';
+    document.getElementById('submitText').textContent = 'Create Tier';
+    
+    // Reset form action
+    document.querySelector('#createTierModal form').action = '{{ url_for("create_tier") }}';
+    
+    // Reset preview
+    updatePreview();
+});
+
+// Initialize tooltips
+document.addEventListener('DOMContentLoaded', function() {
+    var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
+    var tooltipList = tooltipTriggerList.map(function (tooltipTriggerEl) {
+        return new bootstrap.Tooltip(tooltipTriggerEl);
+    });
+});
+</script>
+
+<style>
+.tier-card {
+    border-left-width: 4px !important;
+    transition: all 0.3s ease;
+}
+
+.tier-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+.tier-stat {
+    padding: 0.5rem;
+}
+
+.tier-stat h4 {
+    margin-bottom: 0.25rem;
+    font-weight: 700;
+}
+
+.tier-description {
+    border-top: 1px solid #e9ecef;
+    padding-top: 0.75rem;
+    margin-top: 0.75rem;
+}
+
+.table th {
+    border-top: none;
+    font-weight: 600;
+}
+
+.table tbody tr:hover {
+    background-color: rgba(0, 123, 255, 0.1);
+}
+
+.badge.fs-6 {
+    font-size: 0.875rem !important;
+}
+
+.card {
+    border: none;
+    border-radius: 8px;
+}
+
+.btn-group-sm .btn {
+    padding: 0.25rem 0.5rem;
+}
+
+.modal-body {
+    max-height: 70vh;
+    overflow-y: auto;
+}
+
+.form-text {
+    font-size: 0.875em;
+    color: #6c757d;
+}
+
+/* Border colors for different tier types */
+.border-warning {
+    border-color: #ffc107 !important;
+}
+
+.border-info {
+    border-color: #0dcaf0 !important;
+}
+
+.border-secondary {
+    border-color: #6c757d !important;
+}
+</style>
+{% endblock %}

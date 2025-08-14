@@ -1,0 +1,141 @@
+{% extends "base.html" %}
+
+{% block title %}Members - Lancaster University Library{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <div class="d-flex align-items-center gap-3">
+        <h2><i class="fas fa-users me-2"></i>Library Members</h2>
+        {% if session.user_type == 'librarian' %}
+            <a href="{{ url_for('librarian_dashboard') }}" class="btn btn-outline-primary">
+                <i class="fas fa-arrow-left me-2"></i>Return to Dashboard
+            </a>
+        {% elif session.user_type == 'student' %}
+            <a href="{{ url_for('student_dashboard') }}" class="btn btn-outline-success">
+                <i class="fas fa-arrow-left me-2"></i>Return to Dashboard
+            </a>
+        {% endif %}
+    </div>
+    <a href="{{ url_for('add_member') }}" class="btn btn-success">
+        <i class="fas fa-user-plus me-2"></i>Add New Member
+    </a>
+</div>
+
+<div class="card">
+    <div class="card-header">
+        <h5 class="card-title mb-0">All Members ({{ members|length }} total)</h5>
+    </div>
+    <div class="card-body">
+        {% if members %}
+        <div class="table-responsive">
+            <table class="table table-hover">
+                <thead class="table-dark">
+                    <tr>
+                        <th>ID</th>
+                        <th>Name</th>
+                        <th>Contact Info</th>
+                        <th>Registration Date</th>
+                        <th>Status</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for member in members %}
+                    <tr>
+                        <td><strong>#{{ member[0] }}</strong></td>
+                        <td>{{ member[1] }}</td>
+                        <td>{{ member[2] }}</td>
+                        <td>{{ member[3] }}</td>
+                        <td>
+                            {% if member|length > 7 and member[7] == 'inactive' %}
+                                <span class="badge bg-danger">Inactive</span>
+                            {% else %}
+                                <span class="badge bg-success">Active</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            <div class="btn-group" role="group">
+                                {% if member|length > 7 and member[7] == 'inactive' %}
+                                    <button type="button" class="btn btn-sm btn-outline-secondary" disabled title="Cannot loan books to inactive members">
+                                        <i class="fas fa-book"></i> Loan Book
+                                    </button>
+                                {% else %}
+                                    <a href="{{ url_for('loan_book') }}?member_id={{ member[0] }}" 
+                                       class="btn btn-sm btn-outline-primary" title="Loan book to this member">
+                                        <i class="fas fa-book"></i> Loan Book
+                                    </a>
+                                {% endif %}
+                                {% if session.user_type == 'librarian' %}
+                                    {% if member|length > 7 and member[7] == 'inactive' %}
+                                        <button type="button" 
+                                                class="btn btn-sm btn-secondary" 
+                                                disabled
+                                                title="Member is already inactive">
+                                            <i class="fas fa-user-slash"></i> Inactive
+                                        </button>
+                                    {% else %}
+                                        <button type="button" 
+                                                class="btn btn-sm btn-outline-danger" 
+                                                onclick="removeMember({{ member[0] }}, '{{ member[1] }}')"
+                                                title="Remove this member from the system">
+                                            <i class="fas fa-user-times"></i> Remove
+                                        </button>
+                                    {% endif %}
+                                {% endif %}
+                            </div>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% else %}
+        <div class="text-center py-5">
+            <i class="fas fa-user-friends display-1 text-muted mb-3"></i>
+            <h5>No members registered</h5>
+            <p class="text-muted">Start by adding library members!</p>
+            <a href="{{ url_for('add_member') }}" class="btn btn-success">
+                <i class="fas fa-user-plus"></i> Add First Member
+            </a>
+        </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+function removeMember(memberId, memberName) {
+    // Show confirmation dialog with member details
+    if (confirm(`Are you sure you want to remove "${memberName}" (ID: ${memberId}) from the library system?\n\nThis action will deactivate the member account. The member will no longer be able to borrow books or access the system.`)) {
+        
+        // Create a form to submit the removal request
+        const form = document.createElement('form');
+        form.method = 'POST';
+        form.action = `/remove_member/${memberId}`;
+        
+        // Add CSRF token if you're using one (recommended for production)
+        // You would need to add CSRF protection to your Flask app first
+        
+        // Submit the form
+        document.body.appendChild(form);
+        form.submit();
+    }
+}
+
+// Add some visual feedback when hovering over remove buttons
+document.addEventListener('DOMContentLoaded', function() {
+    const removeButtons = document.querySelectorAll('button[onclick^="removeMember"]');
+    removeButtons.forEach(button => {
+        button.addEventListener('mouseenter', function() {
+            this.classList.remove('btn-outline-danger');
+            this.classList.add('btn-danger');
+        });
+        button.addEventListener('mouseleave', function() {
+            this.classList.remove('btn-danger');
+            this.classList.add('btn-outline-danger');
+        });
+    });
+});
+</script>
+{% endblock %}

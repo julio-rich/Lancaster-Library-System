@@ -1,0 +1,331 @@
+{% extends "base.html" %}
+
+{% block title %}Send Message{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="row">
+        <div class="col-md-12">
+            <h2 class="mb-4">
+                <i class="fas fa-paper-plane"></i> Send Message
+            </h2>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-md-8">
+            <!-- Message Form -->
+            <div class="card">
+                <div class="card-header bg-primary text-white">
+                    <h5 class="mb-0">
+                        <i class="fas fa-envelope"></i> Compose Message
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <form method="POST" action="{{ url_for('send_message') }}">
+                        <div class="mb-3">
+                            <label for="to_user_id" class="form-label">
+                                <i class="fas fa-user"></i> To
+                            </label>
+                            <select class="form-select" id="to_user_id" name="to_user_id" required>
+                                <option value="">Select recipient...</option>
+                                {% for user in users %}
+                                <option value="{{ user[0] }}" 
+                                        data-type="{{ user[2] }}"
+                                        {% if request.args.get('reply_to') == user[0]|string %}selected{% endif %}>
+                                    {{ user[1] }} ({{ user[2].title() }})
+                                </option>
+                                {% endfor %}
+                            </select>
+                            <div class="form-text">Choose who you want to send this message to.</div>
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="subject" class="form-label">
+                                <i class="fas fa-tag"></i> Subject
+                            </label>
+                            <input type="text" class="form-control" id="subject" name="subject" 
+                                   maxlength="200" required
+                                   placeholder="Enter message subject...">
+                            <div class="form-text">Brief description of your message topic.</div>
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="priority" class="form-label">
+                                <i class="fas fa-exclamation-circle"></i> Priority
+                            </label>
+                            <select class="form-select" id="priority" name="priority">
+                                <option value="low">Low</option>
+                                <option value="normal" selected>Normal</option>
+                                <option value="high">High</option>
+                                <option value="urgent">Urgent</option>
+                            </select>
+                            <div class="form-text">Set the importance level of your message.</div>
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="message" class="form-label">
+                                <i class="fas fa-comment"></i> Message
+                            </label>
+                            <textarea class="form-control" id="message" name="message" rows="8" 
+                                      maxlength="2000" required
+                                      placeholder="Type your message here..."></textarea>
+                            <div class="form-text">
+                                <span id="charCount">0</span>/2000 characters
+                            </div>
+                        </div>
+
+                        <!-- Message Type (Hidden for now, could be expanded) -->
+                        <input type="hidden" name="message_type" value="general">
+
+                        <div class="d-flex justify-content-between">
+                            <div>
+                                <button type="button" class="btn btn-outline-secondary" onclick="saveDraft()">
+                                    <i class="fas fa-save"></i> Save Draft
+                                </button>
+                                <button type="button" class="btn btn-outline-info" onclick="previewMessage()">
+                                    <i class="fas fa-eye"></i> Preview
+                                </button>
+                            </div>
+                            <div>
+                                <a href="{{ url_for('messages') }}" class="btn btn-secondary">
+                                    <i class="fas fa-times"></i> Cancel
+                                </a>
+                                <button type="submit" class="btn btn-primary">
+                                    <i class="fas fa-paper-plane"></i> Send Message
+                                </button>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <!-- Quick Actions Sidebar -->
+        <div class="col-md-4">
+            <!-- Quick Recipients -->
+            <div class="card mb-3">
+                <div class="card-header bg-info text-white">
+                    <h6 class="mb-0">
+                        <i class="fas fa-users"></i> Quick Recipients
+                    </h6>
+                </div>
+                <div class="card-body">
+                    <div class="list-group list-group-flush">
+                        <button type="button" class="list-group-item list-group-item-action" 
+                                onclick="selectRecipient('all_librarians')">
+                            <i class="fas fa-user-tie text-primary"></i> All Librarians
+                        </button>
+                        <button type="button" class="list-group-item list-group-item-action" 
+                                onclick="selectRecipient('all_students')">
+                            <i class="fas fa-user-graduate text-success"></i> All Students
+                        </button>
+                        <button type="button" class="list-group-item list-group-item-action" 
+                                onclick="selectRecipient('support')">
+                            <i class="fas fa-headset text-warning"></i> Support Team
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Message Templates -->
+            <div class="card mb-3">
+                <div class="card-header bg-success text-white">
+                    <h6 class="mb-0">
+                        <i class="fas fa-file-alt"></i> Quick Templates
+                    </h6>
+                </div>
+                <div class="card-body">
+                    <div class="d-grid gap-2">
+                        <button type="button" class="btn btn-sm btn-outline-primary" 
+                                onclick="useTemplate('book_inquiry')">
+                            Book Inquiry
+                        </button>
+                        <button type="button" class="btn btn-sm btn-outline-success" 
+                                onclick="useTemplate('loan_extension')">
+                            Loan Extension Request
+                        </button>
+                        <button type="button" class="btn btn-sm btn-outline-info" 
+                                onclick="useTemplate('general_question')">
+                            General Question
+                        </button>
+                        <button type="button" class="btn btn-sm btn-outline-warning" 
+                                onclick="useTemplate('complaint')">
+                            Report Issue
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Message Tips -->
+            <div class="card">
+                <div class="card-header bg-warning text-white">
+                    <h6 class="mb-0">
+                        <i class="fas fa-lightbulb"></i> Tips
+                    </h6>
+                </div>
+                <div class="card-body">
+                    <ul class="mb-0 small">
+                        <li>Be clear and specific in your subject line</li>
+                        <li>Use proper grammar and spelling</li>
+                        <li>Set appropriate priority levels</li>
+                        <li>Include relevant details like book titles, member IDs, etc.</li>
+                        <li>Save drafts for longer messages</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Preview Modal -->
+<div class="modal fade" id="previewModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">
+                    <i class="fas fa-eye"></i> Message Preview
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div class="mb-3">
+                    <strong>To:</strong> <span id="previewRecipient"></span>
+                </div>
+                <div class="mb-3">
+                    <strong>Subject:</strong> <span id="previewSubject"></span>
+                </div>
+                <div class="mb-3">
+                    <strong>Priority:</strong> <span id="previewPriority"></span>
+                </div>
+                <div class="mb-3">
+                    <strong>Message:</strong>
+                    <div class="mt-2 p-3 bg-light border rounded" id="previewMessage"></div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                <button type="button" class="btn btn-primary" onclick="sendFromPreview()">
+                    <i class="fas fa-paper-plane"></i> Send Message
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+// Character counter
+document.getElementById('message').addEventListener('input', function() {
+    const charCount = this.value.length;
+    document.getElementById('charCount').textContent = charCount;
+    
+    if (charCount > 1800) {
+        document.getElementById('charCount').style.color = 'red';
+    } else if (charCount > 1500) {
+        document.getElementById('charCount').style.color = 'orange';
+    } else {
+        document.getElementById('charCount').style.color = 'inherit';
+    }
+});
+
+function selectRecipient(type) {
+    // This would implement logic to select recipients based on type
+    alert(`Quick recipient selection for ${type} would be implemented here`);
+}
+
+function useTemplate(templateType) {
+    const templates = {
+        'book_inquiry': {
+            subject: 'Book Inquiry',
+            message: 'Hello,\n\nI would like to inquire about a book. Could you please help me with information about:\n\nBook Title: [Enter book title]\nAuthor: [Enter author name]\n\nSpecifically, I would like to know:\n- Availability status\n- Location in the library\n- Any related books you might recommend\n\nThank you for your assistance.\n\nBest regards'
+        },
+        'loan_extension': {
+            subject: 'Loan Extension Request',
+            message: 'Hello,\n\nI would like to request an extension for the following book loan:\n\nBook Title: [Enter book title]\nLoan ID: [Enter loan ID if known]\nCurrent due date: [Enter due date]\n\nReason for extension: [Explain why you need more time]\n\nI would appreciate an extension of [number] days if possible.\n\nThank you for your consideration.\n\nBest regards'
+        },
+        'general_question': {
+            subject: 'General Question',
+            message: 'Hello,\n\nI have a question regarding:\n\n[Please describe your question or concern in detail]\n\nI would appreciate any guidance or information you can provide.\n\nThank you for your time.\n\nBest regards'
+        },
+        'complaint': {
+            subject: 'Issue Report',
+            message: 'Hello,\n\nI would like to report an issue I encountered:\n\nIssue type: [Select: System problem / Service issue / Facility concern / Other]\nDate and time: [When did this occur?]\nLocation: [Where did this happen?]\n\nDetailed description:\n[Please provide specific details about what happened]\n\nI would appreciate your attention to this matter.\n\nThank you.\n\nBest regards'
+        }
+    };
+    
+    if (templates[templateType]) {
+        document.getElementById('subject').value = templates[templateType].subject;
+        document.getElementById('message').value = templates[templateType].message;
+        
+        // Update character count
+        document.getElementById('message').dispatchEvent(new Event('input'));
+    }
+}
+
+function previewMessage() {
+    const recipientSelect = document.getElementById('to_user_id');
+    const recipientText = recipientSelect.options[recipientSelect.selectedIndex]?.text || 'No recipient selected';
+    const subject = document.getElementById('subject').value;
+    const priority = document.getElementById('priority').value;
+    const message = document.getElementById('message').value;
+    
+    if (!subject || !message) {
+        alert('Please fill in the subject and message fields before previewing.');
+        return;
+    }
+    
+    document.getElementById('previewRecipient').textContent = recipientText;
+    document.getElementById('previewSubject').textContent = subject;
+    document.getElementById('previewPriority').textContent = priority.charAt(0).toUpperCase() + priority.slice(1);
+    document.getElementById('previewMessage').textContent = message;
+    
+    const modal = new bootstrap.Modal(document.getElementById('previewModal'));
+    modal.show();
+}
+
+function sendFromPreview() {
+    // Close preview modal and submit form
+    const modal = bootstrap.Modal.getInstance(document.getElementById('previewModal'));
+    modal.hide();
+    
+    // Submit the form
+    document.querySelector('form').submit();
+}
+
+function saveDraft() {
+    const formData = {
+        recipient: document.getElementById('to_user_id').value,
+        subject: document.getElementById('subject').value,
+        priority: document.getElementById('priority').value,
+        message: document.getElementById('message').value,
+        timestamp: new Date().toISOString()
+    };
+    
+    // Save to localStorage
+    localStorage.setItem('message_draft', JSON.stringify(formData));
+    alert('Draft saved successfully!');
+}
+
+// Load draft on page load if exists
+document.addEventListener('DOMContentLoaded', function() {
+    const draft = localStorage.getItem('message_draft');
+    if (draft) {
+        const data = JSON.parse(draft);
+        if (confirm('A draft message was found. Would you like to load it?')) {
+            document.getElementById('to_user_id').value = data.recipient || '';
+            document.getElementById('subject').value = data.subject || '';
+            document.getElementById('priority').value = data.priority || 'normal';
+            document.getElementById('message').value = data.message || '';
+            
+            // Update character count
+            document.getElementById('message').dispatchEvent(new Event('input'));
+        }
+    }
+});
+
+// Clear draft when form is submitted
+document.querySelector('form').addEventListener('submit', function() {
+    localStorage.removeItem('message_draft');
+});
+</script>
+{% endblock %}

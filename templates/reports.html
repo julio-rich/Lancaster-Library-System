@@ -1,0 +1,279 @@
+{% extends "base.html" %}
+
+{% block title %}Reports{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="row">
+        <div class="col-md-12">
+            <h2 class="mb-4">
+                <i class="fas fa-file-alt"></i> Library Reports
+            </h2>
+        </div>
+    </div>
+
+    <!-- Report Categories -->
+    <div class="row">
+        <!-- Circulation Reports -->
+        <div class="col-md-6 mb-4">
+            <div class="card">
+                <div class="card-header bg-primary text-white">
+                    <h5 class="mb-0">
+                        <i class="fas fa-exchange-alt"></i> Circulation Reports
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="d-grid gap-2">
+                        <a href="{{ url_for('loans') }}" class="btn btn-outline-primary">
+                            <i class="fas fa-list"></i> Active Loans Report
+                        </a>
+                        <a href="{{ url_for('loans') }}?overdue=1" class="btn btn-outline-danger">
+                            <i class="fas fa-exclamation-circle"></i> Overdue Items Report
+                        </a>
+                        <a href="{{ url_for('reservations') }}" class="btn btn-outline-info">
+                            <i class="fas fa-bookmark"></i> Reservations Report
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Inventory Reports -->
+        <div class="col-md-6 mb-4">
+            <div class="card">
+                <div class="card-header bg-success text-white">
+                    <h5 class="mb-0">
+                        <i class="fas fa-boxes"></i> Inventory Reports
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="d-grid gap-2">
+                        <a href="{{ url_for('books') }}" class="btn btn-outline-success">
+                            <i class="fas fa-book"></i> Complete Book Catalog
+                        </a>
+                        <a href="{{ url_for('inventory_alerts') }}" class="btn btn-outline-warning">
+                            <i class="fas fa-exclamation-triangle"></i> Low Stock Alert
+                        </a>
+                        <a href="{{ url_for('book_categories') }}" class="btn btn-outline-info">
+                            <i class="fas fa-tags"></i> Categories Report
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row">
+        <!-- Member Reports -->
+        <div class="col-md-6 mb-4">
+            <div class="card">
+                <div class="card-header bg-info text-white">
+                    <h5 class="mb-0">
+                        <i class="fas fa-users"></i> Member Reports
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="d-grid gap-2">
+                        <a href="{{ url_for('members') }}" class="btn btn-outline-info">
+                            <i class="fas fa-list-ul"></i> All Members Report
+                        </a>
+                        <a href="{{ url_for('member_tiers') }}" class="btn btn-outline-primary">
+                            <i class="fas fa-star"></i> Membership Tiers
+                        </a>
+                        <button class="btn btn-outline-secondary" onclick="generateNewMembersReport()">
+                            <i class="fas fa-user-plus"></i> New Members (30 days)
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Discipline & Maintenance Reports -->
+        <div class="col-md-6 mb-4">
+            <div class="card">
+                <div class="card-header bg-warning text-white">
+                    <h5 class="mb-0">
+                        <i class="fas fa-clipboard-check"></i> Discipline & Maintenance
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="d-grid gap-2">
+                        <a href="{{ url_for('fines') }}" class="btn btn-outline-warning">
+                            <i class="fas fa-exclamation-circle"></i> Outstanding Notices
+                        </a>
+                        <button class="btn btn-outline-info" onclick="generateMaintenanceReport()">
+                            <i class="fas fa-tools"></i> Book Condition Report
+                        </button>
+                        <button class="btn btn-outline-secondary" onclick="generateDisciplinaryReport()">
+                            <i class="fas fa-balance-scale"></i> Disciplinary Actions
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Custom Report Generator -->
+    <div class="row">
+        <div class="col-md-12">
+            <div class="card">
+                <div class="card-header bg-dark text-white">
+                    <h5 class="mb-0">
+                        <i class="fas fa-cogs"></i> Custom Report Generator
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <form id="customReportForm">
+                        <div class="row">
+                            <div class="col-md-4">
+                                <div class="mb-3">
+                                    <label for="reportType" class="form-label">Report Type</label>
+                                    <select class="form-select" id="reportType" name="reportType">
+                                        <option value="">Select Report Type</option>
+                                        <option value="loans">Loans Report</option>
+                                        <option value="books">Books Report</option>
+                                        <option value="members">Members Report</option>
+                                        <option value="fines">Fines Report</option>
+                                    </select>
+                                </div>
+                            </div>
+                            <div class="col-md-4">
+                                <div class="mb-3">
+                                    <label for="startDate" class="form-label">Start Date</label>
+                                    <input type="date" class="form-control" id="startDate" name="startDate">
+                                </div>
+                            </div>
+                            <div class="col-md-4">
+                                <div class="mb-3">
+                                    <label for="endDate" class="form-label">End Date</label>
+                                    <input type="date" class="form-control" id="endDate" name="endDate">
+                                </div>
+                            </div>
+                        </div>
+                        <div class="row">
+                            <div class="col-md-12">
+                                <button type="button" class="btn btn-primary" onclick="generateCustomReport()">
+                                    <i class="fas fa-play"></i> Generate Report
+                                </button>
+                                <button type="button" class="btn btn-secondary ms-2" onclick="exportToCSV()">
+                                    <i class="fas fa-download"></i> Export CSV
+                                </button>
+                                <button type="button" class="btn btn-info ms-2" onclick="printReport()">
+                                    <i class="fas fa-print"></i> Print Report
+                                </button>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Report Results Area -->
+    <div class="row mt-4" id="reportResults" style="display: none;">
+        <div class="col-md-12">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">
+                        <i class="fas fa-table"></i> Report Results
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div id="reportContent">
+                        <!-- Dynamic report content will be loaded here -->
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+function generateCustomReport() {
+    const reportType = document.getElementById('reportType').value;
+    const startDate = document.getElementById('startDate').value;
+    const endDate = document.getElementById('endDate').value;
+    
+    if (!reportType) {
+        alert('Please select a report type.');
+        return;
+    }
+    
+    // Show loading state
+    const reportResults = document.getElementById('reportResults');
+    const reportContent = document.getElementById('reportContent');
+    
+    reportContent.innerHTML = '<div class="text-center"><i class="fas fa-spinner fa-spin"></i> Generating report...</div>';
+    reportResults.style.display = 'block';
+    
+    // Simulate report generation (replace with actual AJAX call)
+    setTimeout(() => {
+        reportContent.innerHTML = `
+            <div class="alert alert-success">
+                <i class="fas fa-check"></i> Custom ${reportType} report generated successfully!
+            </div>
+            <p>Date Range: ${startDate || 'All time'} to ${endDate || 'Present'}</p>
+            <div class="table-responsive">
+                <table class="table table-striped">
+                    <thead>
+                        <tr>
+                            <th>Item</th>
+                            <th>Details</th>
+                            <th>Date</th>
+                            <th>Status</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td colspan="4" class="text-center text-muted">
+                                Report data would be displayed here based on selected criteria
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        `;
+    }, 2000);
+}
+
+function generateNewMembersReport() {
+    alert('New Members Report: This would show members registered in the last 30 days.');
+}
+
+function generateMaintenanceReport() {
+    alert('Book Condition Report: This would show books needing repair or maintenance.');
+}
+
+function generateDisciplinaryReport() {
+    alert('Disciplinary Actions: This would show library policy violations and actions taken.');
+}
+
+function exportToCSV() {
+    alert('Export functionality would download the current report as a CSV file.');
+}
+
+function printReport() {
+    const printContent = document.getElementById('reportContent').innerHTML;
+    const newWindow = window.open('', '_blank');
+    newWindow.document.write(`
+        <html>
+            <head>
+                <title>Library Report</title>
+                <style>
+                    body { font-family: Arial, sans-serif; }
+                    table { border-collapse: collapse; width: 100%; }
+                    th, td { border: 1px solid #ddd; padding: 8px; text-align: left; }
+                    th { background-color: #f2f2f2; }
+                </style>
+            </head>
+            <body>
+                <h2>Library Report</h2>
+                ${printContent}
+            </body>
+        </html>
+    `);
+    newWindow.document.close();
+    newWindow.print();
+}
+</script>
+{% endblock %}

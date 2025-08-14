@@ -1,0 +1,504 @@
+/* Custom CSS for the library website */
+/* CSS Variables for Theme Support */
+:root {
+    /* Light Mode Colors */
+    --bg-primary: white;
+    --bg-secondary: #f8f9fa;
+    --text-primary: black;
+    --text-secondary: #666;
+    --card-bg: white;
+    --border-color: black;
+    --shadow: rgba(0,0,0,0.1);
+    
+    /* Red variants (same for both modes) */
+    --red-primary: #DC143C;
+    --red-secondary: #B22222;
+    --red-dark: #8B0000;
+    --red-light: #CD5C5C;
+    --red-accent: #C41E3A;
+    --red-bright: #CC0000;
+    --red-coral: #FF6B6B;
+}
+
+[data-theme="dark"] {
+    /* Dark Mode Colors */
+    --bg-primary: #1a1a1a;
+    --bg-secondary: #2d2d2d;
+    --text-primary: white;
+    --text-secondary: #ccc;
+    --card-bg: #333;
+    --border-color: #555;
+    --shadow: rgba(255,255,255,0.1);
+}
+
+/* Reset some default styles */
+body, h1, h2, h3, h4, h5, h6, p, ul, ol, li, a, button, input {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+    font-family: 'Segoe UI', Arial, sans-serif;
+}
+
+body {
+    background: var(--bg-primary);
+    color: var(--text-primary);
+    line-height: 1.6;
+    min-height: 100vh;
+    transition: background-color 0.3s ease, color 0.3s ease;
+}
+
+.navbar-brand {
+    font-weight: bold;
+}
+
+.hero-section {
+    background: linear-gradient(90deg, var(--red-secondary) 60%, var(--bg-primary) 100%);
+    color: white;
+}
+
+.stat-card {
+    box-shadow: 0 2px 4px var(--shadow);
+}
+
+.stat-icon {
+    width: 60px;
+    height: 60px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    font-size: 24px;
+}
+
+.btn {
+    border-radius: 50px;
+}
+
+footer {
+    text-align: center;
+    color: var(--text-primary);
+    padding: 1rem 0;
+    margin-top: 2rem;
+    font-size: 0.9rem;
+}
+
+.footer {
+    background-color: var(--bg-secondary);
+    color: var(--text-primary);
+}
+
+.footer a {
+    color: var(--text-primary);
+    text-decoration: none;
+}
+
+.footer a:hover {
+    color: var(--red-coral);
+    text-decoration: underline;
+}
+
+header {
+    background: var(--bg-secondary);
+    color: var(--text-primary);
+    padding: 1.5rem 2rem;
+    text-align: center;
+    box-shadow: 0 2px 8px var(--shadow);
+}
+
+nav {
+    margin: 1rem 0;
+    text-align: center;
+}
+
+nav a {
+    color: var(--red-primary);
+    text-decoration: none;
+    margin: 0 1rem;
+    font-weight: 500;
+    transition: color 0.2s;
+}
+
+nav a:hover {
+    color: var(--red-dark);
+}
+
+.container {
+    max-width: 900px;
+    margin: 2rem auto;
+    background: var(--card-bg);
+    padding: 2rem;
+    border-radius: 10px;
+    box-shadow: 0 4px 24px var(--shadow);
+    transition: background-color 0.3s ease;
+}
+
+h1, h2, h3 {
+    color: var(--red-accent);
+    margin-bottom: 1rem;
+}
+
+button, input[type="submit"] {
+    background: var(--red-light);
+    color: white;
+    border: none;
+    padding: 0.7rem 1.5rem;
+    border-radius: 5px;
+    cursor: pointer;
+    font-size: 1rem;
+    transition: background 0.2s;
+}
+
+button:hover, input[type="submit"]:hover {
+    background: var(--red-dark);
+}
+
+input, select, textarea {
+    width: 100%;
+    padding: 0.6rem;
+    margin: 0.5rem 0 1rem 0;
+    border: 1px solid var(--border-color);
+    border-radius: 4px;
+    font-size: 1rem;
+    background: var(--card-bg);
+    color: var(--text-primary);
+    transition: background-color 0.3s ease, color 0.3s ease;
+}
+
+table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-bottom: 2rem;
+}
+
+th, td {
+    padding: 0.8rem;
+    border-bottom: 1px solid var(--border-color);
+    text-align: left;
+    color: var(--text-primary);
+}
+
+th {
+    background: var(--bg-secondary);
+    font-weight: 600;
+}
+
+tr:hover {
+    background: var(--bg-secondary);
+}
+
+/* Librarian Dashboard Custom Colors */
+.card {
+    background: var(--card-bg);
+    border: 1px solid var(--red-light);
+    border-radius: 10px;
+    box-shadow: 0 2px 8px var(--shadow);
+    transition: background-color 0.3s ease;
+}
+
+.card-header {
+    background: var(--red-secondary);
+    color: white;
+    border-bottom: 1px solid var(--red-secondary);
+}
+
+.btn-outline-primary,
+.btn-outline-secondary,
+.btn-outline-success,
+.btn-outline-warning,
+.btn-outline-info {
+    border-color: var(--red-primary);
+    color: var(--red-primary);
+    background: var(--card-bg);
+    transition: all 0.3s ease;
+}
+
+.btn-outline-primary:hover,
+.btn-outline-secondary:hover,
+.btn-outline-success:hover,
+.btn-outline-warning:hover,
+.btn-outline-info:hover {
+    background: var(--red-primary);
+    color: white;
+}
+
+.alert-danger {
+    background: var(--card-bg);
+    color: var(--red-bright);
+    border-color: var(--red-bright);
+}
+
+.alert-success {
+    background: var(--card-bg);
+    color: var(--red-dark);
+    border-color: var(--red-dark);
+}
+
+/* Theme Toggle Button */
+.theme-toggle {
+    background: none;
+    border: 2px solid var(--red-primary);
+    border-radius: 50px;
+    color: var(--red-primary);
+    padding: 8px 12px;
+    cursor: pointer;
+    font-size: 1rem;
+    transition: all 0.3s ease;
+    margin-left: 10px;
+}
+
+.theme-toggle:hover {
+    background: var(--red-primary);
+    color: white;
+    transform: scale(1.05);
+}
+
+.theme-toggle i {
+    transition: transform 0.3s ease;
+}
+
+[data-theme="dark"] .theme-toggle .fa-sun {
+    display: inline;
+}
+
+[data-theme="dark"] .theme-toggle .fa-moon {
+    display: none;
+}
+
+[data-theme="light"] .theme-toggle .fa-sun {
+    display: none;
+}
+
+[data-theme="light"] .theme-toggle .fa-moon {
+    display: inline;
+}
+
+/* Bootstrap Color Overrides for Red/White/Black Theme */
+.bg-primary, .btn-primary {
+    background-color: #DC143C !important;
+    border-color: #DC143C !important;
+}
+
+.bg-secondary, .btn-secondary {
+    background-color: black !important;
+    border-color: black !important;
+}
+
+.bg-success, .btn-success {
+    background-color: #8B0000 !important;
+    border-color: #8B0000 !important;
+}
+
+.bg-info, .btn-info {
+    background-color: #B22222 !important;
+    border-color: #B22222 !important;
+}
+
+.bg-warning, .btn-warning {
+    background-color: #CD5C5C !important;
+    border-color: #CD5C5C !important;
+    color: white !important;
+}
+
+.bg-danger, .btn-danger {
+    background-color: #CC0000 !important;
+    border-color: #CC0000 !important;
+}
+
+.text-primary {
+    color: #DC143C !important;
+}
+
+.text-secondary {
+    color: black !important;
+}
+
+.text-success {
+    color: #8B0000 !important;
+}
+
+.text-info {
+    color: #B22222 !important;
+}
+
+.text-warning {
+    color: #CD5C5C !important;
+}
+
+.text-danger {
+    color: #CC0000 !important;
+}
+
+.text-muted {
+    color: black !important;
+    opacity: 0.7;
+}
+
+.badge {
+    color: white !important;
+}
+
+.badge.bg-primary {
+    background-color: #DC143C !important;
+}
+
+.badge.bg-secondary {
+    background-color: black !important;
+}
+
+.badge.bg-success {
+    background-color: #8B0000 !important;
+}
+
+.badge.bg-info {
+    background-color: #B22222 !important;
+}
+
+.badge.bg-warning {
+    background-color: #CD5C5C !important;
+}
+
+.badge.bg-danger {
+    background-color: #CC0000 !important;
+}
+
+/* Navbar Theme-Responsive Styling */
+/* Light Mode Navbar */
+[data-theme="light"] .navbar,
+.navbar {
+    background-color: white !important;
+    border-bottom: 2px solid var(--red-primary);
+}
+
+[data-theme="light"] .navbar-brand,
+.navbar-brand {
+    color: var(--red-primary) !important;
+    font-weight: bold;
+}
+
+[data-theme="light"] .navbar-brand:hover {
+    color: var(--red-dark) !important;
+}
+
+[data-theme="light"] .navbar-nav .nav-link {
+    color: var(--red-primary) !important;
+}
+
+[data-theme="light"] .navbar-nav .nav-link:hover,
+[data-theme="light"] .navbar-nav .nav-link:focus {
+    color: var(--red-dark) !important;
+}
+
+[data-theme="light"] .dropdown-menu {
+    background-color: white !important;
+    border: 1px solid var(--red-primary) !important;
+}
+
+[data-theme="light"] .dropdown-item {
+    color: black !important;
+}
+
+[data-theme="light"] .dropdown-item:hover {
+    background-color: var(--red-primary) !important;
+    color: white !important;
+}
+
+/* Light Mode Navbar Text and Buttons */
+[data-theme="light"] .navbar-text {
+    color: var(--red-primary) !important;
+}
+
+[data-theme="light"] .btn-outline-light {
+    border-color: var(--red-primary) !important;
+    color: var(--red-primary) !important;
+    background-color: transparent !important;
+}
+
+[data-theme="light"] .btn-outline-light:hover {
+    background-color: var(--red-primary) !important;
+    color: white !important;
+    border-color: var(--red-primary) !important;
+}
+
+/* Default Light Mode Navbar Text and Buttons (when no data-theme is set) */
+.navbar-text {
+    color: var(--red-primary) !important;
+}
+
+.btn-outline-light {
+    border-color: var(--red-primary) !important;
+    color: var(--red-primary) !important;
+    background-color: transparent !important;
+}
+
+.btn-outline-light:hover {
+    background-color: var(--red-primary) !important;
+    color: white !important;
+    border-color: var(--red-primary) !important;
+}
+
+/* Dark Mode Navbar */
+[data-theme="dark"] .navbar {
+    background-color: black !important;
+    border-bottom: 2px solid var(--red-primary);
+}
+
+[data-theme="dark"] .navbar-brand {
+    color: white !important;
+    font-weight: bold;
+}
+
+[data-theme="dark"] .navbar-brand:hover {
+    color: var(--red-primary) !important;
+}
+
+[data-theme="dark"] .navbar-nav .nav-link {
+    color: white !important;
+}
+
+[data-theme="dark"] .navbar-nav .nav-link:hover,
+[data-theme="dark"] .navbar-nav .nav-link:focus {
+    color: var(--red-primary) !important;
+}
+
+[data-theme="dark"] .dropdown-menu {
+    background-color: var(--bg-secondary) !important;
+    border: 1px solid var(--red-primary) !important;
+}
+
+[data-theme="dark"] .dropdown-item {
+    color: white !important;
+}
+
+[data-theme="dark"] .dropdown-item:hover {
+    background-color: var(--red-primary) !important;
+    color: white !important;
+}
+
+/* Dark Mode Navbar Text and Buttons */
+[data-theme="dark"] .navbar-text {
+    color: white !important;
+}
+
+[data-theme="dark"] .btn-outline-light {
+    border-color: white !important;
+    color: white !important;
+    background-color: transparent !important;
+}
+
+[data-theme="dark"] .btn-outline-light:hover {
+    background-color: white !important;
+    color: black !important;
+    border-color: white !important;
+}
+
+/* Navbar Toggler */
+.navbar-toggler {
+    border-color: var(--red-primary) !important;
+}
+
+[data-theme="light"] .navbar-toggler-icon {
+    background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 30 30'%3e%3cpath stroke='rgba%28220, 20, 60, 1%29' stroke-linecap='round' stroke-miterlimit='10' stroke-width='2' d='M4 7h22M4 15h22M4 23h22'/%3e%3c/svg%3e") !important;
+}
+
+[data-theme="dark"] .navbar-toggler-icon {
+    background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 30 30'%3e%3cpath stroke='rgba%28255, 255, 255, 0.75%29' stroke-linecap='round' stroke-miterlimit='10' stroke-width='2' d='M4 7h22M4 15h22M4 23h22'/%3e%3c/svg%3e") !important;
+}

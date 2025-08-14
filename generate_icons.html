@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Generate PWA Icons</title>
+</head>
+<body>
+    <h3>Generating PWA Icons...</h3>
+    <canvas id="canvas" style="border: 1px solid #ccc;"></canvas>
+    
+    <script>
+        const sizes = [72, 96, 128, 144, 152, 192, 384, 512];
+        const canvas = document.getElementById('canvas');
+        const ctx = canvas.getContext('2d');
+        
+        function generateIcon(size) {
+            canvas.width = size;
+            canvas.height = size;
+            
+            // Background
+            ctx.fillStyle = '#ea6666';
+            ctx.fillRect(0, 0, size, size);
+            
+            // Book icon
+            const padding = size * 0.15;
+            const bookWidth = size - (padding * 2);
+            const bookHeight = bookWidth * 0.75;
+            const bookX = padding;
+            const bookY = (size - bookHeight) / 2;
+            
+            // Book cover
+            ctx.fillStyle = '#ffffff';
+            ctx.fillRect(bookX, bookY, bookWidth, bookHeight);
+            
+            // Book spine
+            ctx.fillStyle = '#a24b4b';
+            ctx.fillRect(bookX, bookY, bookWidth * 0.1, bookHeight);
+            
+            // Book pages
+            ctx.fillStyle = '#f8f9fa';
+            ctx.fillRect(bookX + bookWidth * 0.1, bookY + bookHeight * 0.1, bookWidth * 0.85, bookHeight * 0.8);
+            
+            // Text lines
+            ctx.fillStyle = '#6c757d';
+            const lineHeight = bookHeight * 0.08;
+            const lineWidth = bookWidth * 0.6;
+            const startX = bookX + bookWidth * 0.2;
+            
+            for (let i = 0; i < 4; i++) {
+                const y = bookY + bookHeight * 0.3 + (i * lineHeight * 1.5);
+                ctx.fillRect(startX, y, lineWidth * (0.7 + Math.random() * 0.3), lineHeight * 0.4);
+            }
+            
+            // Convert to blob and create download link
+            canvas.toBlob(function(blob) {
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = `icon-${size}x${size}.png`;
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+                URL.revokeObjectURL(url);
+            }, 'image/png');
+        }
+        
+        // Generate all icon sizes
+        let index = 0;
+        function generateNext() {
+            if (index < sizes.length) {
+                generateIcon(sizes[index]);
+                index++;
+                setTimeout(generateNext, 500); // Delay between generations
+            } else {
+                document.body.innerHTML += '<p style="color: green;">✅ All icons generated! Check your Downloads folder.</p>';
+            }
+        }
+        
+        generateNext();
+    </script>
+</body>
+</html>

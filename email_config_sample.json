@@ -1,0 +1,14 @@
+{
+  "smtp_server": "smtp.gmail.com",
+  "smtp_port": 587,
+  "sender_email": "your_library_email@gmail.com",
+  "sender_password": "your_app_password"
+}
+
+Note: 
+- For Gmail, you need to use an "App Password" instead of your regular password
+- Go to Google Account Settings > Security > 2-Step Verification > App passwords
+- Generate an app password specifically for this library chatbot
+- Replace "your_library_email@gmail.com" with your actual email
+- Replace "your_app_password" with the generated app password
+- Rename this file to "email_config.json" after updating the settings

@@ -1,0 +1,2721 @@
+{% extends "base.html" %}
+
+{% block title %}Student Dashboard - Lancaster University Library{% endblock %}
+
+{% block content %}
+<style>
+.hero-section {
+    background: linear-gradient(135deg, #ea6666 0%, #a24b4b 100%);
+}
+
+.bg-gradient {
+    background: linear-gradient(135deg, #ea6666 0%, #a24b4b 100%);
+}
+
+.card {
+    transition: transform 0.2s;
+    border: none;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+.card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 8px rgba(0,0,0,0.15);
+}
+
+.btn {
+    transition: all 0.3s ease;
+}
+
+.btn:hover {
+    transform: translateY(-1px);
+}
+
+.display-6 {
+    font-size: 3rem;
+}
+
+/* Mobile Responsiveness */
+@media (max-width: 768px) {
+    .display-6 {
+        font-size: 2rem;
+    }
+    
+    .display-1 {
+        font-size: 3rem !important;
+    }
+    
+    .hero-section h2 {
+        font-size: 1.5rem !important;
+    }
+    
+    .hero-section p {
+        font-size: 0.9rem;
+    }
+    
+    .card-body {
+        padding: 1rem;
+    }
+    
+    .btn-sm {
+        padding: 0.4rem 0.8rem;
+        font-size: 0.85rem;
+    }
+    
+    .d-flex.gap-2 {
+        gap: 0.5rem !important;
+    }
+}
+
+@media (max-width: 480px) {
+    .hero-section {
+        padding: 1.5rem !important;
+    }
+    
+    .hero-section h2 {
+        font-size: 1.3rem !important;
+        margin-bottom: 0.5rem !important;
+    }
+    
+    .hero-section p {
+        font-size: 0.85rem;
+        margin-bottom: 1rem !important;
+    }
+    
+    .display-1 {
+        font-size: 2.5rem !important;
+        margin-bottom: 0;
+    }
+    
+    .card {
+        margin-bottom: 1rem;
+    }
+    
+    .btn-group-vertical .btn {
+        font-size: 0.8rem;
+    }
+    
+    .text-end h3 {
+        font-size: 1.5rem;
+    }
+    
+    .text-end small {
+        font-size: 0.7rem;
+    }
+}
+
+/* Book Suggestion Styling */
+.suggestion-card {
+    transition: all 0.3s ease;
+    border-radius: 8px;
+}
+
+.suggestion-card:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 6px 12px rgba(0,0,0,0.15);
+}
+
+.suggestion-item {
+    transition: all 0.2s ease;
+    border-radius: 6px;
+}
+
+.suggestion-item:hover {
+    background-color: rgba(0, 123, 255, 0.05);
+    border-color: #007bff;
+}
+
+.suggestion-title {
+    color: #2c3e50;
+    font-weight: 600;
+}
+
+.badge-sm {
+    font-size: 0.75em;
+}
+
+.spinner-border-sm {
+    width: 1rem;
+    height: 1rem;
+}
+
+/* Modal styling enhancements */
+#suggestionsModal .modal-body {
+    max-height: 80vh;
+    overflow-y: auto;
+}
+
+#suggestionsModal .card-header {
+    font-weight: 600;
+    border-bottom: 2px solid rgba(255,255,255,0.2);
+}
+
+/* Loading animation */
+@keyframes fadeInUp {
+    from {
+        opacity: 0;
+        transform: translateY(30px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.suggestion-card, .suggestion-item {
+    animation: fadeInUp 0.6s ease-out;
+}
+
+/* Custom scrollbar for modal */
+#suggestionsModal .modal-body::-webkit-scrollbar {
+    width: 6px;
+}
+
+#suggestionsModal .modal-body::-webkit-scrollbar-track {
+    background: #f1f1f1;
+    border-radius: 3px;
+}
+
+#suggestionsModal .modal-body::-webkit-scrollbar-thumb {
+    background: #888;
+    border-radius: 3px;
+}
+
+#suggestionsModal .modal-body::-webkit-scrollbar-thumb:hover {
+    background: #555;
+}</style>
+
+<!-- Hero Welcome Section with Split Layout -->
+<div class="row g-4 mb-4 align-items-center">
+    <!-- Welcome Message -->
+    <div class="col-lg-8">
+        <div class="hero-section bg-gradient text-white rounded-3 p-4 h-100 d-flex align-items-center">
+            <div>
+                <h2 class="mb-2">Welcome back, {{ session.name }}! 👋</h2>
+                <p class="mb-3 opacity-90">Ready to explore new knowledge? Your library adventure continues here.</p>
+                <div class="d-flex gap-2 flex-wrap">
+                    <button class="btn btn-light btn-sm" style="width:180px;" onclick="window.location.href='{{ url_for('student_catalog') }}'">
+                        <i class="fas fa-search me-1"></i>Browse Catalog
+                    </button>
+                    <button class="btn btn-outline-light btn-sm" onclick="showSuggestions()">
+                        <i class="fas fa-magic me-1"></i>Get Suggestions
+                    </button>
+                    <button class="btn btn-outline-light btn-sm" onclick="refreshDashboard()">
+                        <i class="fas fa-sync-alt me-1"></i>Refresh
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Quick Action Panel -->
+    <div class="col-lg-4">
+        <div class="card h-100 border-0 shadow-sm">
+            <div class="card-header bg-white border-0 pb-0">
+                <h6 class="text-muted mb-0"><i class="fas fa-bolt text-primary me-2"></i>Quick Actions</h6>
+            </div>
+            <div class="card-body pt-2 d-flex align-items-center">
+                <div class="d-flex gap-2 flex-wrap w-100">
+                    <button class="btn btn-outline-primary btn-sm" onclick="showAccountManagement()">
+                        <i class="fas fa-user-cog me-2"></i>My Account
+                    </button>
+                    <button class="btn btn-outline-success btn-sm" onclick="showEResources()">
+                        <i class="fas fa-laptop me-2"></i>eResources
+                    </button>
+                    <button class="btn btn-outline-info btn-sm" onclick="showReservations()">
+                        <i class="fas fa-bookmark me-2"></i>Reservations
+                    </button>
+                    <button class="btn btn-outline-secondary btn-sm" onclick="showSettings()">
+                        <i class="fas fa-cog me-2"></i>Settings
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+
+<!-- Dashboard Statistics Cards -->
+<div class="row g-3 mb-4">
+    <div class="col-xl-3 col-md-6">
+        <div class="card border-0 shadow-sm overflow-hidden">
+            <div class="card-body p-0">
+                <div class="row g-0">
+                    <div class="col-4 bg-primary d-flex align-items-center justify-content-center">
+                        <i class="fas fa-book text-white display-6"></i>
+                    </div>
+                    <div class="col-8 p-3">
+                        <div class="text-end">
+                            <h3 class="mb-1 text-primary fw-bold">{{ loans|length }}</h3>
+                            <small class="text-muted text-uppercase fw-semibold">Active Loans</small>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-xl-3 col-md-5">
+        <div class="card border-0 shadow-sm overflow-hidden">
+            <div class="card-body p-0">
+                <div class="row g-0">
+                    <div class="col-4 bg-warning d-flex align-items-center justify-content-center">
+                        <i class="fas fa-clock text-white display-6"></i>
+                    </div>
+                    <div class="col-8 p-3">
+                        <div class="text-end">
+                            <h3 class="mb-1 text-warning fw-bold">{{ loans|selectattr('6', 'equalto', 1)|list|length }}</h3>
+                            <small class="text-muted text-uppercase fw-semibold">Overdue Items</small>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-xl-3 col-md-6">
+        <div class="card border-0 shadow-sm overflow-hidden">
+            <div class="card-body p-0">
+                <div class="row g-0">
+                    <div class="col-4 bg-success d-flex align-items-center justify-content-center">
+                        <i class="fas fa-star text-white display-6"></i>
+                    </div>
+                    <div class="col-8 p-3">
+                        <div class="text-end">
+                            <h3 class="mb-1 text-success fw-bold">{{ total_available_books }}</h3>
+                            <small class="text-muted text-uppercase fw-semibold">Available Books</small>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-xl-3 col-md-6">
+        <div class="card border-0 shadow-sm overflow-hidden">
+            <div class="card-body p-0">
+                <div class="row g-0">
+                    <div class="col-4 bg-info d-flex align-items-center justify-content-center">
+                        <i class="fas fa-user-graduate text-white display-6"></i>
+                    </div>
+                    <div class="col-8 p-3">
+                        <div class="text-end">
+                            <h4 class="mb-1 text-info fw-bold">Student</h4>
+                            <small class="text-muted text-uppercase fw-semibold">Member Status</small>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Main Dashboard Content -->
+<div class="row g-4">
+    <!-- Main Content Column -->
+    <div class="col-lg-9">
+                        <!-- My Current Loans -->
+        <div class="card mb-4">
+            <div class="card-header bg-white border-0">
+                <div class="d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0">
+                        <i class="fas fa-book-reader text-primary me-2"></i>My Current Loans
+                    </h5>
+                    <div class="d-flex gap-2 align-items-center">
+                        <span class="badge bg-light text-dark">{{ loans|length }} active</span>
+                        <button class="btn btn-sm btn-outline-primary" onclick="refreshDashboard()" title="Refresh data">
+                            <i class="fas fa-sync-alt"></i>
+                        </button>
+                    </div>
+                </div>
+            </div>
+            <div class="card-body">
+                {% if loans %}
+                <div class="table-responsive">
+                    <table class="table table-hover align-middle">
+                        <thead class="table-light">
+                            <tr>
+                                <th class="border-0">Book Details</th>
+                                <th class="border-0">Loan Period</th>
+                                <th class="border-0 text-center">Status</th>
+                                <th class="border-0 text-center">Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for loan in loans %}
+                            <tr class="border-bottom">
+                                <td>
+                                    <div>
+                                        <h6 class="mb-1">{{ loan[1] }}</h6>
+                                        <small class="text-muted">by {{ loan[2] }}</small>
+                                    </div>
+                                </td>
+                                <td>
+                                    <div>
+                                        <small class="text-muted d-block">Borrowed: {{ loan[3] }}</small>
+                                        <strong class="{% if loan[6] == 1 %}text-danger{% else %}text-primary{% endif %}">Due: {{ loan[4] }}</strong>
+                                    </div>
+                                </td>
+                                <td class="text-center">
+                                    {% if loan[5] %}
+                                        <span class="badge bg-success fs-6">Returned</span>
+                                    {% elif loan[6] == 1 %}
+                                        <span class="badge bg-danger fs-6">Overdue</span>
+                                    {% else %}
+                                        <span class="badge bg-primary fs-6">Active</span>
+                                    {% endif %}
+                                </td>
+                                <td class="text-center">
+                                    {% if not loan[5] %}
+                                    <div class="btn-group" role="group">
+                                        <button class="btn btn-outline-primary btn-sm" title="Renew Book">
+                                            <i class="fas fa-redo"></i>
+                                        </button>
+                                        <button class="btn btn-outline-secondary btn-sm" title="Contact Librarian">
+                                            <i class="fas fa-envelope"></i>
+                                        </button>
+                                    </div>
+                                    {% endif %}
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                {% else %}
+                <div class="text-center py-5">
+                    <div class="mb-4">
+                        <i class="fas fa-book-open display-1 text-muted opacity-50"></i>
+                    </div>
+                    <h5 class="text-muted">No Current Loans</h5>
+                    <p class="text-muted mb-4">Ready to discover your next great read?</p>
+                    <div class="d-flex justify-content-center gap-2">
+                        <a href="#available-books" class="btn btn-primary">
+                            <i class="fas fa-search me-2"></i>Browse Books
+                        </a>
+                        <button class="btn btn-outline-primary" onclick="showSuggestions()">
+                            <i class="fas fa-magic me-2"></i>Get Suggestions
+                        </button>
+                    </div>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+        
+        <!-- Recent Returns Section -->
+        {% if recent_returns %}
+        <div class="card mb-4">
+            <div class="card-header bg-white border-0">
+                <div class="d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0">
+                        <i class="fas fa-check-circle text-success me-2"></i>Recently Returned Books
+                    </h5>
+                    <span class="badge bg-success text-white">{{ recent_returns|length }} returned</span>
+                </div>
+            </div>
+            <div class="card-body">
+                <div class="table-responsive">
+                    <table class="table table-hover align-middle">
+                        <thead class="table-light">
+                            <tr>
+                                <th class="border-0">Book Details</th>
+                                <th class="border-0">Loan Period</th>
+                                <th class="border-0 text-center">Return Date</th>
+                                <th class="border-0 text-center">Status</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for return in recent_returns %}
+                            <tr class="border-bottom">
+                                <td>
+                                    <div>
+                                        <h6 class="mb-1">{{ return[1] }}</h6>
+                                        <small class="text-muted">by {{ return[2] }}</small>
+                                        <br><small class="text-muted">ISBN: {{ return[6] }}</small>
+                                    </div>
+                                </td>
+                                <td>
+                                    <div>
+                                        <small class="text-muted d-block">Borrowed: {{ return[3] }}</small>
+                                        <small class="text-muted d-block">Due: {{ return[4] }}</small>
+                                    </div>
+                                </td>
+                                <td class="text-center">
+                                    <strong class="text-success">{{ return[5] }}</strong>
+                                </td>
+                                <td class="text-center">
+                                    <span class="badge bg-success fs-6">✓ Returned</span>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+        {% endif %}
+        
+        <!-- Return Notifications -->
+        {% if return_notifications %}
+        <div class="alert alert-success alert-dismissible fade show" role="alert">
+            <h6 class="alert-heading"><i class="fas fa-bell me-2"></i>Recent Return Confirmations</h6>
+            {% for notification in return_notifications %}
+            <div class="mb-2">
+                <strong>{{ notification[1] }}</strong><br>
+                <small class="text-muted">{{ notification[3] }}</small>
+                {% if not notification[4] %}
+                <span class="badge bg-primary ms-2">New</span>
+                {% endif %}
+            </div>
+            {% endfor %}
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+        {% endif %}
+        
+        <!-- Featured Actions Row -->
+        <div class="row g-3 mb-4">
+            <div class="col-md-4">
+                <div class="card h-100 border-0 shadow-sm bg-light">
+                    <div class="card-body text-center py-4">
+                        <i class="fas fa-search display-5 text-primary mb-3"></i>
+                        <h6 class="fw-bold">Explore Catalog</h6>
+                        <p class="small text-muted mb-3">Browse thousands of books across all categories</p>
+                        <a href="{{ url_for('student_catalog') }}" class="btn btn-primary btn-sm stretched-link">
+                            Browse Now
+                        </a>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="card h-100 border-0 shadow-sm bg-light">
+                    <div class="card-body text-center py-4">
+                        <i class="fas fa-lightbulb display-5 text-warning mb-3"></i>
+                        <h6 class="fw-bold">Get Recommendations</h6>
+                        <p class="small text-muted mb-3">Discover books tailored to your interests</p>
+                        <button class="btn btn-warning btn-sm stretched-link" onclick="showSuggestions()">
+                            Find Books
+                        </button>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="card h-100 border-0 shadow-sm bg-light">
+                    <div class="card-body text-center py-4">
+                        <i class="fas fa-laptop display-5 text-success mb-3"></i>
+                        <h6 class="fw-bold">Digital Resources</h6>
+                        <p class="small text-muted mb-3">Access online journals and databases</p>
+                        <button class="btn btn-success btn-sm stretched-link" onclick="showEResources()">
+                            Access Now
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Sidebar Column -->
+    <div class="col-lg-3">
+        <!-- Messages Notification -->
+        <div class="card mb-3 border-0 shadow-sm">
+            <div class="card-header bg-primary text-white border-0">
+                <h6 class="mb-0">
+                    <i class="fas fa-bell me-2"></i>Recent Updates
+                </h6>
+            </div>
+            <div class="card-body p-0">
+                {% if student_messages and student_messages|length > 0 %}
+                    {% for message in student_messages[:2] %}
+                    <div class="p-3 border-bottom {{ 'bg-light' if not message[7] else '' }}">
+                        <div class="d-flex align-items-start">
+                            <div class="flex-shrink-0">
+                                <div class="bg-primary rounded-circle p-2">
+                                    <i class="fas fa-envelope text-white small"></i>
+                                </div>
+                            </div>
+                            <div class="flex-grow-1 ms-3">
+                                <h6 class="mb-1 small fw-bold">{{ message[4] }}</h6>
+                                <p class="mb-1 small text-muted">{{ message[5][:60] }}{% if message[5]|length > 60 %}...{% endif %}</p>
+                                <small class="text-muted">{{ message[6] }}</small>
+                                {% if not message[7] %}
+                                <span class="badge bg-primary ms-2">New</span>
+                                {% endif %}
+                            </div>
+                        </div>
+                        <button class="btn btn-sm btn-outline-primary mt-2 w-100" 
+                                onclick="viewMessage({{ message[0] }}, '{{ message[4]|replace("'", "&#39;") }}', '{{ message[5]|replace("'", "&#39;")|replace('"', '&quot;') }}', '{{ message[6] }}')">
+                            <i class="fas fa-eye me-1"></i>Read Message
+                        </button>
+                    </div>
+                    {% endfor %}
+                {% else %}
+                    <div class="p-3 text-center">
+                        <i class="fas fa-inbox text-muted mb-2"></i>
+                        <p class="small text-muted mb-0">No new messages</p>
+                    </div>
+                {% endif %}
+                <div class="p-3 border-top bg-light">
+                    <button class="btn btn-outline-primary btn-sm w-100" onclick="showAllMessages()">
+                        <i class="fas fa-list me-1"></i>View All Messages
+                    </button>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Account Summary -->
+        <div class="card mb-3 border-0 shadow-sm">
+            <div class="card-header bg-info text-white border-0">
+                <h6 class="mb-0">
+                    <i class="fas fa-user me-2"></i>Account Overview
+                </h6>
+            </div>
+            <div class="card-body">
+                <div class="row g-0 text-center">
+                    <div class="col-6 border-end">
+                        <div class="p-2">
+                            <h5 class="text-primary mb-1">{{ loans|length }}</h5>
+                            <small class="text-muted">Active Loans</small>
+                        </div>
+                    </div>
+                    <div class="col-6">
+                        <div class="p-2">
+                            <h5 class="text-warning mb-1">{{ loans|selectattr('6', 'equalto', 1)|list|length }}</h5>
+                            <small class="text-muted">Overdue</small>
+                        </div>
+                    </div>
+                </div>
+                <hr class="my-3">
+                <div class="d-grid gap-2">
+                    <button class="btn btn-outline-info btn-sm" onclick="showAccountManagement()">
+                        <i class="fas fa-history me-1"></i>View History
+                    </button>
+                    <button class="btn btn-outline-info btn-sm" onclick="showReservations()">
+                        <i class="fas fa-bookmark me-1"></i>My Reservations
+                    </button>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Quick Settings -->
+        <div class="card border-0 shadow-sm">
+            <div class="card-header bg-secondary text-white border-0">
+                <h6 class="mb-0">
+                    <i class="fas fa-tools me-2"></i>Quick Tools
+                </h6>
+            </div>
+            <div class="card-body">
+                <div class="list-group list-group-flush">
+                    <button class="list-group-item list-group-item-action border-0 px-0" onclick="showSettings()">
+                        <i class="fas fa-cog text-secondary me-2"></i>Dashboard Settings
+                    </button>
+                    <button class="list-group-item list-group-item-action border-0 px-0" onclick="exportAccountData()">
+                        <i class="fas fa-download text-secondary me-2"></i>Export My Data
+                    </button>
+                    <a href="mailto:library@lancaster.ac.uk" class="list-group-item list-group-item-action border-0 px-0">
+                        <i class="fas fa-envelope text-secondary me-2"></i>Contact Support
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Available Books Section -->
+<div class="card mt-4" id="available-books">
+    <div class="card-header">
+        <h5 class="card-title mb-0">
+            <i class="fas fa-books me-2"></i>Available Books (Browse & Request)
+        </h5>
+    </div>
+    <div class="card-body">
+        {% if available_books %}
+        <div class="row g-3">
+            {% for book in available_books %}
+            <div class="col-md-6 col-lg-4">
+                <div class="card h-100">
+                    <div class="card-body">
+                        <h6 class="card-title text-truncate">{{ book[1] }}</h6>
+                        <p class="card-text text-muted small">{{ book[2] }}</p>
+                        <p class="card-text">
+                            <span class="badge bg-secondary">{{ book[3] }}</span>
+                            <span class="badge bg-info">{{ book[4] }}</span>
+                        </p>
+                        <button class="btn btn-sm btn-primary w-100" 
+                                onclick="requestBook('{{ book[0] }}', '{{ book[1] }}')">
+                            <i class="fas fa-book me-1"></i>Request Book
+                        </button>
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+        <div class="text-center mt-3">
+            <p class="text-muted">Showing {{ available_books|length }} available books</p>
+            {% if available_books|length >= 20 %}
+                <div class="mt-3">
+                    <p class="text-info mb-2">Displaying top 20 most recent additions</p>
+                    <a href="{{ url_for('student_catalog') }}" class="btn btn-primary btn-lg">
+                        <i class="fas fa-book-open me-2"></i>View Full Catalog
+                    </a>
+                    <p class="small text-muted mt-2">Browse all available books with search functionality</p>
+                </div>
+            {% else %}
+                <div class="mt-3">
+                    <a href="{{ url_for('student_catalog') }}" class="btn btn-outline-primary">
+                        <i class="fas fa-search me-2"></i>Search Catalog
+                    </a>
+                </div>
+            {% endif %}
+        </div>
+        {% else %}
+        <div class="text-center py-4">
+            <i class="fas fa-book-open display-4 text-muted mb-3"></i>
+            <h5>No Books Available</h5>
+            <p class="text-muted">All books are currently on loan.</p>
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+<!-- Contact Librarian Modal -->
+<div class="modal fade" id="contactModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">
+                    <i class="fas fa-envelope me-2"></i>Contact Librarian
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <form id="contactForm">
+                    <div class="mb-3">
+                        <label for="subject" class="form-label">Subject</label>
+                        <select class="form-select" id="subject" required>
+                            <option value="">Choose a subject...</option>
+                            <option value="Book Request">Book Request</option>
+                            <option value="Loan Extension">Loan Extension Request</option>
+                            <option value="Lost Book">Report Lost Book</option>
+                            <option value="General Inquiry">General Inquiry</option>
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label for="message" class="form-label">Message</label>
+                        <textarea class="form-control" id="message" rows="4" 
+                                  placeholder="Type your message here..." required></textarea>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-primary" onclick="sendMessage()">
+                    <i class="fas fa-paper-plane me-2"></i>Send Message
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- View Message Modal -->
+<div class="modal fade" id="viewMessageModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">
+                    <i class="fas fa-envelope-open me-2"></i>Message from Librarian
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div class="mb-3">
+                    <label class="form-label"><strong>Subject:</strong></label>
+                    <div id="messageSubject" class="fw-bold"></div>
+                </div>
+                <div class="mb-3">
+                    <label class="form-label"><strong>Date:</strong></label>
+                    <div id="messageDate" class="text-muted"></div>
+                </div>
+                <div class="mb-3">
+                    <label class="form-label"><strong>Message:</strong></label>
+                    <div id="messageContent" class="border rounded p-3 bg-light"></div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                <button type="button" class="btn btn-outline-primary" onclick="markAsRead()">
+                    <i class="fas fa-check me-2"></i>Mark as Read
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- All Messages Modal -->
+<div class="modal fade" id="allMessagesModal" tabindex="-1">
+    <div class="modal-dialog modal-xl">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">
+                    <i class="fas fa-inbox me-2"></i>All Messages from Librarian
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div id="allMessagesList">
+                    <!-- Messages will be loaded here -->
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Book Suggestions Modal -->
+<div class="modal fade" id="suggestionsModal" tabindex="-1">
+    <div class="modal-dialog modal-xl">
+        <div class="modal-content">
+            <div class="modal-header bg-warning text-dark">
+                <h5 class="modal-title">
+                    <i class="fas fa-lightbulb me-2"></i>Personalized Book Suggestions
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <!-- Loading State -->
+                <div id="suggestionsLoading" class="text-center py-4">
+                    <div class="spinner-border text-warning" role="status">
+                        <span class="visually-hidden">Loading suggestions...</span>
+                    </div>
+                    <p class="mt-3">Analyzing your reading preferences...</p>
+                </div>
+
+                <!-- Suggestions Content -->
+                <div id="suggestionsContent" style="display: none;">
+                    <!-- Suggestion Categories -->
+                    <div class="row g-4">
+                        <!-- Based on Your Reading History -->
+                        <div class="col-12">
+                            <div class="card border-primary">
+                                <div class="card-header bg-primary text-white">
+                                    <h6 class="mb-0">
+                                        <i class="fas fa-history me-2"></i>Based on Your Reading History
+                                    </h6>
+                                </div>
+                                <div class="card-body">
+                                    <div id="historyBasedSuggestions" class="row g-3">
+                                        <!-- Suggestions will be loaded here -->
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Trending Books -->
+                        <div class="col-md-6">
+                            <div class="card border-success">
+                                <div class="card-header bg-success text-white">
+                                    <h6 class="mb-0">
+                                        <i class="fas fa-trending-up me-2"></i>Trending Now
+                                    </h6>
+                                </div>
+                                <div class="card-body">
+                                    <div id="trendingSuggestions">
+                                        <!-- Trending books will be loaded here -->
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- New Arrivals -->
+                        <div class="col-md-6">
+                            <div class="card border-info">
+                                <div class="card-header bg-info text-white">
+                                    <h6 class="mb-0">
+                                        <i class="fas fa-star me-2"></i>New Arrivals
+                                    </h6>
+                                </div>
+                                <div class="card-body">
+                                    <div id="newArrivalsSuggestions">
+                                        <!-- New arrivals will be loaded here -->
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Random Discovery -->
+                        <div class="col-12">
+                            <div class="card border-warning">
+                                <div class="card-header bg-warning text-dark">
+                                    <h6 class="mb-0">
+                                        <i class="fas fa-dice me-2"></i>Surprise Me! - Random Discoveries
+                                    </h6>
+                                </div>
+                                <div class="card-body">
+                                    <div class="d-flex justify-content-between align-items-center mb-3">
+                                        <span>Discover something completely new!</span>
+                                        <button class="btn btn-sm btn-outline-warning" onclick="generateRandomSuggestions()">
+                                            <i class="fas fa-refresh me-1"></i>New Random Picks
+                                        </button>
+                                    </div>
+                                    <div id="randomSuggestions" class="row g-3">
+                                        <!-- Random suggestions will be loaded here -->
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Reading Preferences Panel -->
+                    <div class="mt-4">
+                        <div class="card border-secondary">
+                            <div class="card-header bg-secondary text-white">
+                                <h6 class="mb-0">
+                                    <i class="fas fa-sliders-h me-2"></i>Customize Your Suggestions
+                                </h6>
+                            </div>
+                            <div class="card-body">
+                                <div class="row g-3">
+                                    <div class="col-md-3">
+                                        <label for="preferredCategory" class="form-label">Preferred Category</label>
+                                        <select class="form-select form-select-sm" id="preferredCategory" onchange="updateSuggestions()">
+                                            <option value="all">All Categories</option>
+                                            <option value="Fiction">Fiction</option>
+                                            <option value="Non-Fiction">Non-Fiction</option>
+                                            <option value="Science">Science</option>
+                                            <option value="Technology">Technology</option>
+                                            <option value="History">History</option>
+                                            <option value="Biography">Biography</option>
+                                            <option value="Romance">Romance</option>
+                                            <option value="Mystery">Mystery</option>
+                                            <option value="Fantasy">Fantasy</option>
+                                        </select>
+                                    </div>
+                                    <div class="col-md-3">
+                                        <label for="readingLevel" class="form-label">Reading Complexity</label>
+                                        <select class="form-select form-select-sm" id="readingLevel" onchange="updateSuggestions()">
+                                            <option value="all">Any Level</option>
+                                            <option value="beginner">Light Reading</option>
+                                            <option value="intermediate">Moderate</option>
+                                            <option value="advanced">Challenging</option>
+                                        </select>
+                                    </div>
+                                    <div class="col-md-3">
+                                        <label for="bookLength" class="form-label">Preferred Length</label>
+                                        <select class="form-select form-select-sm" id="bookLength" onchange="updateSuggestions()">
+                                            <option value="all">Any Length</option>
+                                            <option value="short">Quick Reads</option>
+                                            <option value="medium">Standard</option>
+                                            <option value="long">Epic Reads</option>
+                                        </select>
+                                    </div>
+                                    <div class="col-md-3">
+                                        <label for="suggestionCount" class="form-label">Number of Suggestions</label>
+                                        <select class="form-select form-select-sm" id="suggestionCount" onchange="updateSuggestions()">
+                                            <option value="5">5 Books</option>
+                                            <option value="10" selected>10 Books</option>
+                                            <option value="15">15 Books</option>
+                                            <option value="20">20 Books</option>
+                                        </select>
+                                    </div>
+                                </div>
+                                <div class="mt-3 text-center">
+                                    <button class="btn btn-primary" onclick="updateSuggestions()">
+                                        <i class="fas fa-sync-alt me-2"></i>Update Suggestions
+                                    </button>
+                                    <button class="btn btn-outline-secondary" onclick="savePreferences()">
+                                        <i class="fas fa-save me-2"></i>Save Preferences
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <div class="me-auto">
+                    <small class="text-muted">
+                        <i class="fas fa-info-circle me-1"></i>
+                        Suggestions are based on your reading history, trending books, and similar users' preferences.
+                    </small>
+                </div>
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                <button type="button" class="btn btn-primary" onclick="exportSuggestions()">
+                    <i class="fas fa-download me-2"></i>Export List
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Account Management Modal -->
+<div class="modal fade" id="accountModal" tabindex="-1">
+    <div class="modal-dialog modal-xl">
+        <div class="modal-content">
+            <div class="modal-header bg-info text-white">
+                <h5 class="modal-title">
+                    <i class="fas fa-user-cog me-2"></i>Account Management
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div class="row g-4">
+                    <!-- Borrowing History -->
+                    <div class="col-12">
+                        <div class="card">
+                            <div class="card-header">
+                                <h6 class="mb-0">
+                                    <i class="fas fa-history me-2"></i>Complete Borrowing History
+                                </h6>
+                            </div>
+                            <div class="card-body">
+                                <div id="borrowingHistoryContent">
+                                    <div class="text-center py-3">
+                                        <div class="spinner-border" role="status"></div>
+                                        <p class="mt-2">Loading your borrowing history...</p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Due Date Management -->
+                    <div class="col-md-6">
+                        <div class="card">
+                            <div class="card-header">
+                                <h6 class="mb-0">
+                                    <i class="fas fa-clock me-2"></i>Due Dates & Renewals
+                                </h6>
+                            </div>
+                            <div class="card-body">
+                                <div id="dueDatesContent"></div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Holds Management -->
+                    <div class="col-md-6">
+                        <div class="card">
+                            <div class="card-header">
+                                <h6 class="mb-0">
+                                    <i class="fas fa-hand-paper me-2"></i>My Holds
+                                </h6>
+                            </div>
+                            <div class="card-body">
+                                <div id="holdsContent"></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                <button type="button" class="btn btn-primary" onclick="exportAccountData()">Export Data</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- eResources Modal -->
+<div class="modal fade" id="eResourcesModal" tabindex="-1">
+    <div class="modal-dialog modal-xl">
+        <div class="modal-content">
+            <div class="modal-header bg-success text-white">
+                <h5 class="modal-title">
+                    <i class="fas fa-laptop me-2"></i>Digital Resources & Databases
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div class="row g-4">
+                    <!-- Featured Resources -->
+                    <div class="col-12">
+                        <div class="alert alert-info">
+                            <i class="fas fa-info-circle me-2"></i>
+                            <strong>Access Digital Resources:</strong> Use your student credentials to access these premium databases and journals.
+                        </div>
+                    </div>
+                    
+                    <!-- Academic Databases -->
+                    <div class="col-md-6">
+                        <div class="card">
+                            <div class="card-header">
+                                <h6 class="mb-0">
+                                    <i class="fas fa-database me-2"></i>Academic Databases
+                                </h6>
+                            </div>
+                            <div class="card-body">
+                                <div class="list-group list-group-flush">
+                                    <a href="#" class="list-group-item list-group-item-action d-flex justify-content-between align-items-center" onclick="accessResource('JSTOR', 'https://jstor.org')">
+                                        <div>
+                                            <strong>JSTOR</strong>
+                                            <small class="d-block text-muted">Academic journals and books</small>
+                                        </div>
+                                        <i class="fas fa-external-link-alt"></i>
+                                    </a>
+                                    <a href="#" class="list-group-item list-group-item-action d-flex justify-content-between align-items-center" onclick="accessResource('IEEE Xplore', 'https://ieeexplore.ieee.org')">
+                                        <div>
+                                            <strong>IEEE Xplore</strong>
+                                            <small class="d-block text-muted">Engineering & technology papers</small>
+                                        </div>
+                                        <i class="fas fa-external-link-alt"></i>
+                                    </a>
+                                    <a href="#" class="list-group-item list-group-item-action d-flex justify-content-between align-items-center" onclick="accessResource('PubMed', 'https://pubmed.ncbi.nlm.nih.gov')">
+                                        <div>
+                                            <strong>PubMed</strong>
+                                            <small class="d-block text-muted">Medical & life sciences</small>
+                                        </div>
+                                        <i class="fas fa-external-link-alt"></i>
+                                    </a>
+                                    <a href="#" class="list-group-item list-group-item-action d-flex justify-content-between align-items-center" onclick="accessResource('ProQuest', 'https://proquest.com')">
+                                        <div>
+                                            <strong>ProQuest</strong>
+                                            <small class="d-block text-muted">Dissertations & theses</small>
+                                        </div>
+                                        <i class="fas fa-external-link-alt"></i>
+                                    </a>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Online Journals -->
+                    <div class="col-md-6">
+                        <div class="card">
+                            <div class="card-header">
+                                <h6 class="mb-0">
+                                    <i class="fas fa-newspaper me-2"></i>Online Journals
+                                </h6>
+                            </div>
+                            <div class="card-body">
+                                <div class="list-group list-group-flush">
+                                    <a href="#" class="list-group-item list-group-item-action d-flex justify-content-between align-items-center" onclick="accessResource('Nature', 'https://nature.com')">
+                                        <div>
+                                            <strong>Nature</strong>
+                                            <small class="d-block text-muted">Science journal</small>
+                                        </div>
+                                        <i class="fas fa-external-link-alt"></i>
+                                    </a>
+                                    <a href="#" class="list-group-item list-group-item-action d-flex justify-content-between align-items-center" onclick="accessResource('Science Direct', 'https://sciencedirect.com')">
+                                        <div>
+                                            <strong>ScienceDirect</strong>
+                                            <small class="d-block text-muted">Scientific publications</small>
+                                        </div>
+                                        <i class="fas fa-external-link-alt"></i>
+                                    </a>
+                                    <a href="#" class="list-group-item list-group-item-action d-flex justify-content-between align-items-center" onclick="accessResource('SpringerLink', 'https://link.springer.com')">
+                                        <div>
+                                            <strong>SpringerLink</strong>
+                                            <small class="d-block text-muted">Academic books & journals</small>
+                                        </div>
+                                        <i class="fas fa-external-link-alt"></i>
+                                    </a>
+                                    <a href="#" class="list-group-item list-group-item-action d-flex justify-content-between align-items-center" onclick="accessResource('Taylor & Francis', 'https://taylorandfrancis.com')">
+                                        <div>
+                                            <strong>Taylor & Francis</strong>
+                                            <small class="d-block text-muted">Multidisciplinary journals</small>
+                                        </div>
+                                        <i class="fas fa-external-link-alt"></i>
+                                    </a>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Digital Tools -->
+                    <div class="col-12">
+                        <div class="card">
+                            <div class="card-header">
+                                <h6 class="mb-0">
+                                    <i class="fas fa-tools me-2"></i>Research Tools & Services
+                                </h6>
+                            </div>
+                            <div class="card-body">
+                                <div class="row g-3">
+                                    <div class="col-md-4">
+                                        <div class="card border-primary">
+                                            <div class="card-body text-center">
+                                                <i class="fas fa-search display-4 text-primary mb-3"></i>
+                                                <h6>Research Guides</h6>
+                                                <p class="small text-muted">Subject-specific research assistance</p>
+                                                <button class="btn btn-outline-primary btn-sm" onclick="accessResource('Research Guides', '/research-guides')">
+                                                    <i class="fas fa-book-open me-1"></i>View Guides
+                                                </button>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-4">
+                                        <div class="card border-success">
+                                            <div class="card-body text-center">
+                                                <i class="fas fa-quote-left display-4 text-success mb-3"></i>
+                                                <h6>Citation Manager</h6>
+                                                <p class="small text-muted">Organize and format references</p>
+                                                <button class="btn btn-outline-success btn-sm" onclick="accessResource('Zotero', 'https://zotero.org')">
+                                                    <i class="fas fa-external-link-alt me-1"></i>Access Zotero
+                                                </button>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-4">
+                                        <div class="card border-info">
+                                            <div class="card-body text-center">
+                                                <i class="fas fa-graduation-cap display-4 text-info mb-3"></i>
+                                                <h6>Thesis Repository</h6>
+                                                <p class="small text-muted">Lancaster student dissertations</p>
+                                                <button class="btn btn-outline-info btn-sm" onclick="accessResource('Thesis Repository', '/thesis-repository')">
+                                                    <i class="fas fa-archive me-1"></i>Browse Theses
+                                                </button>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                <button type="button" class="btn btn-success" onclick="bookResearchSession()">Book Research Session</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Reservations Modal -->
+<div class="modal fade" id="reservationsModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header bg-primary text-white">
+                <h5 class="modal-title">
+                    <i class="fas fa-bookmark me-2"></i>My Reservations
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div id="reservationsContent">
+                    <div class="text-center py-4">
+                        <div class="spinner-border" role="status"></div>
+                        <p class="mt-2">Loading your reservations...</p>
+                    </div>
+                </div>
+                
+                <!-- Reserve New Book Section -->
+                <div class="mt-4">
+                    <div class="card border-info">
+                        <div class="card-header bg-info text-white">
+                            <h6 class="mb-0">
+                                <i class="fas fa-plus-circle me-2"></i>Reserve a Book
+                            </h6>
+                        </div>
+                        <div class="card-body">
+                            <form id="reservationForm">
+                                <div class="mb-3">
+                                    <label for="reserveBookTitle" class="form-label">Book Title or ISBN</label>
+                                    <input type="text" class="form-control" id="reserveBookTitle" placeholder="Enter book title or ISBN...">
+                                </div>
+                                <div class="mb-3">
+                                    <label for="reserveNotes" class="form-label">Additional Notes (optional)</label>
+                                    <textarea class="form-control" id="reserveNotes" rows="2" placeholder="Any specific edition or additional information..."></textarea>
+                                </div>
+                                <button type="button" class="btn btn-info" onclick="submitReservation()">
+                                    <i class="fas fa-bookmark me-2"></i>Submit Reservation
+                                </button>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                <button type="button" class="btn btn-outline-primary" onclick="refreshReservations()">Refresh</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Settings Modal -->
+<div class="modal fade" id="settingsModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header bg-secondary text-white">
+                <h5 class="modal-title">
+                    <i class="fas fa-cog me-2"></i>Dashboard Settings
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div class="row g-4">
+                    
+                    <!-- Notification Settings -->
+                    <div class="col-md-6">
+                        <div class="card">
+                            <div class="card-header">
+                                <h6 class="mb-0">
+                                    <i class="fas fa-bell me-2"></i>Notifications
+                                </h6>
+                            </div>
+                            <div class="card-body">
+                                <div class="form-check form-switch mb-3">
+                                    <input class="form-check-input" type="checkbox" id="emailNotifications" checked>
+                                    <label class="form-check-label" for="emailNotifications">
+                                        Email Notifications
+                                    </label>
+                                </div>
+                                <div class="form-check form-switch mb-3">
+                                    <input class="form-check-input" type="checkbox" id="dueDateReminders" checked>
+                                    <label class="form-check-label" for="dueDateReminders">
+                                        Due Date Reminders
+                                    </label>
+                                </div>
+                                <div class="form-check form-switch mb-3">
+                                    <input class="form-check-input" type="checkbox" id="newBookAlerts" checked>
+                                    <label class="form-check-label" for="newBookAlerts">
+                                        New Book Alerts
+                                    </label>
+                                </div>
+                                <div class="form-check form-switch mb-3">
+                                    <input class="form-check-input" type="checkbox" id="reservationUpdates" checked>
+                                    <label class="form-check-label" for="reservationUpdates">
+                                        Reservation Updates
+                                    </label>
+                                </div>
+                                <div class="mb-3">
+                                    <label for="reminderDays" class="form-label">Due Date Reminder (days before)</label>
+                                    <select class="form-select" id="reminderDays">
+                                        <option value="1">1 day</option>
+                                        <option value="2">2 days</option>
+                                        <option value="3" selected>3 days</option>
+                                        <option value="7">1 week</option>
+                                    </select>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Dashboard Layout -->
+                    <div class="col-md-6">
+                        <div class="card">
+                            <div class="card-header">
+                                <h6 class="mb-0">
+                                    <i class="fas fa-layout me-2"></i>Dashboard Layout
+                                </h6>
+                            </div>
+                            <div class="card-body">
+                                <div class="form-check mb-3">
+                                    <input class="form-check-input" type="checkbox" id="showQuickStats" checked>
+                                    <label class="form-check-label" for="showQuickStats">
+                                        Show Quick Statistics
+                                    </label>
+                                </div>
+                                <div class="form-check mb-3">
+                                    <input class="form-check-input" type="checkbox" id="showAvailableBooks" checked>
+                                    <label class="form-check-label" for="showAvailableBooks">
+                                        Show Available Books Section
+                                    </label>
+                                </div>
+                                <div class="form-check mb-3">
+                                    <input class="form-check-input" type="checkbox" id="showMessages" checked>
+                                    <label class="form-check-label" for="showMessages">
+                                        Show Messages Panel
+                                    </label>
+                                </div>
+                                <div class="mb-3">
+                                    <label for="defaultTab" class="form-label">Default View</label>
+                                    <select class="form-select" id="defaultTab">
+                                        <option value="dashboard" selected>Dashboard</option>
+                                        <option value="loans">My Loans</option>
+                                        <option value="catalog">Book Catalog</option>
+                                        <option value="suggestions">Suggestions</option>
+                                    </select>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Mobile Settings -->
+                    <div class="col-12">
+                        <div class="card">
+                            <div class="card-header">
+                                <h6 class="mb-0">
+                                    <i class="fas fa-mobile-alt me-2"></i>Mobile Optimization
+                                </h6>
+                            </div>
+                            <div class="card-body">
+                                <div class="row g-3">
+                                    <div class="col-md-4">
+                                        <div class="form-check form-switch">
+                                            <input class="form-check-input" type="checkbox" id="mobileOptimized" checked>
+                                            <label class="form-check-label" for="mobileOptimized">
+                                                Enable Mobile View
+                                            </label>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-4">
+                                        <div class="form-check form-switch">
+                                            <input class="form-check-input" type="checkbox" id="touchFriendly" checked>
+                                            <label class="form-check-label" for="touchFriendly">
+                                                Touch-Friendly Buttons
+                                            </label>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-4">
+                                        <div class="form-check form-switch">
+                                            <input class="form-check-input" type="checkbox" id="offlineMode">
+                                            <label class="form-check-label" for="offlineMode">
+                                                Offline Reading List
+                                            </label>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-outline-danger" onclick="resetSettings()">Reset to Defaults</button>
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-primary" onclick="saveSettings()">Save Settings</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Notifications Toast Container -->
+<div class="toast-container position-fixed bottom-0 end-0 p-3" id="toastContainer">
+    <!-- Toasts will be dynamically inserted here -->
+</div>
+
+<script>
+function requestBook(isbn, title) {
+    if (confirm(`Would you like to request "${title}"?\n\nThis will send a message to the librarian.`)) {
+        // Send actual request to server
+        fetch('/student/request_book', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+                isbn: isbn,
+                title: title,
+                author: '',  // Author not available in dashboard view
+                note: ''
+            })
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                alert('Book request sent to librarian!');
+            } else {
+                alert('Failed to send book request: ' + data.message);
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            alert('Failed to send book request. Please try again.');
+        });
+    }
+}
+
+function sendMessage() {
+    const subject = document.getElementById('subject').value;
+    const message = document.getElementById('message').value;
+    
+    if (!subject || !message) {
+        alert('Please fill in all fields.');
+        return;
+    }
+    
+    // Send actual message to server
+    fetch('/student/send_message', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+            subject: subject,
+            message: message
+        })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            alert('Message sent to librarian successfully!');
+        } else {
+            alert('Failed to send message: ' + data.message);
+        }
+        
+        // Close modal and reset form
+        const modal = bootstrap.Modal.getInstance(document.getElementById('contactModal'));
+        modal.hide();
+        document.getElementById('contactForm').reset();
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        alert('Failed to send message. Please try again.');
+        
+        // Still close modal and reset form on error
+        const modal = bootstrap.Modal.getInstance(document.getElementById('contactModal'));
+        modal.hide();
+        document.getElementById('contactForm').reset();
+    });
+}
+
+// Message viewing functionality
+let currentMessageId = null;
+
+function viewMessage(messageId, subject, content, date) {
+    currentMessageId = messageId;
+    
+    // Populate modal fields
+    document.getElementById('messageSubject').textContent = subject;
+    document.getElementById('messageContent').textContent = content;
+    document.getElementById('messageDate').textContent = date;
+    
+    // Show modal
+    const modal = new bootstrap.Modal(document.getElementById('viewMessageModal'));
+    modal.show();
+}
+
+function markAsRead() {
+    if (currentMessageId) {
+        fetch('/student/mark_message_read', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+                message_id: currentMessageId
+            })
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                // Close modal and refresh page
+                const modal = bootstrap.Modal.getInstance(document.getElementById('viewMessageModal'));
+                modal.hide();
+                setTimeout(() => location.reload(), 500);
+            } else {
+                alert('Failed to mark message as read');
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            alert('Failed to mark message as read');
+        });
+    }
+}
+
+function showAllMessages() {
+    // Fetch all messages from server
+    fetch('/student/get_all_messages')
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            const messagesList = document.getElementById('allMessagesList');
+            if (data.messages.length === 0) {
+                messagesList.innerHTML = '<p class="text-muted text-center">No messages found.</p>';
+            } else {
+                let messagesHtml = '';
+                data.messages.forEach(message => {
+                    const isUnread = !message.is_read;
+                    messagesHtml += `
+                        <div class="mb-3 p-3 border rounded ${isUnread ? 'bg-light' : ''}">
+                            <div class="d-flex justify-content-between align-items-start">
+                                <div class="flex-grow-1">
+                                    <h6 class="mb-1">${message.subject}</h6>
+                                    <small class="text-muted">${message.sent_date}</small>
+                                    ${isUnread ? '<span class="badge bg-primary ms-2">New</span>' : ''}
+                                </div>
+                                <button class="btn btn-sm btn-outline-primary" 
+                                        onclick="viewMessage(${message.message_id}, '${message.subject}', '${message.message}', '${message.sent_date}')">
+                                    <i class="fas fa-eye"></i> View
+                                </button>
+                            </div>
+                            <p class="mb-1 mt-2">${message.message.substring(0, 150)}${message.message.length > 150 ? '...' : ''}</p>
+                        </div>
+                    `;
+                });
+                messagesList.innerHTML = messagesHtml;
+            }
+            
+            // Show modal
+            const modal = new bootstrap.Modal(document.getElementById('allMessagesModal'));
+            modal.show();
+        } else {
+            alert('Failed to load messages');
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        alert('Failed to load messages');
+    });
+}
+
+// Book Suggestions Functionality
+let currentSuggestions = {
+    historyBased: [],
+    trending: [],
+    newArrivals: [],
+    random: []
+};
+
+function showSuggestions() {
+    const modal = new bootstrap.Modal(document.getElementById('suggestionsModal'));
+    modal.show();
+    
+    // Show loading state
+    document.getElementById('suggestionsLoading').style.display = 'block';
+    document.getElementById('suggestionsContent').style.display = 'none';
+    
+    // Load user preferences
+    loadUserPreferences();
+    
+    // Fetch suggestions from server
+    generateSuggestions();
+}
+
+function generateSuggestions() {
+    const preferences = {
+        category: document.getElementById('preferredCategory')?.value || 'all',
+        readingLevel: document.getElementById('readingLevel')?.value || 'all',
+        bookLength: document.getElementById('bookLength')?.value || 'all',
+        count: parseInt(document.getElementById('suggestionCount')?.value || '10')
+    };
+    
+    // Simulate API call to get suggestions
+    fetch('/student/get_suggestions', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(preferences)
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            currentSuggestions = data.suggestions;
+            displaySuggestions();
+        } else {
+            // Fallback to mock data if API not implemented
+            generateMockSuggestions();
+        }
+    })
+    .catch(error => {
+        console.log('API not implemented, using mock data');
+        generateMockSuggestions();
+    });
+}
+
+function generateMockSuggestions() {
+    // Mock suggestions data
+    const mockBooks = [
+        { isbn: '978-0-123456-47-2', title: 'The Art of Programming', author: 'Jane Smith', category: 'Technology', status: 'Available', reason: 'Similar to your recent Technology reads' },
+        { isbn: '978-0-234567-58-3', title: 'Modern Web Development', author: 'John Doe', category: 'Technology', status: 'Available', reason: 'Trending in Technology' },
+        { isbn: '978-0-345678-69-4', title: 'Data Science Fundamentals', author: 'Alice Johnson', category: 'Science', status: 'Available', reason: 'Popular among students' },
+        { isbn: '978-0-456789-70-5', title: 'Machine Learning Basics', author: 'Bob Wilson', category: 'Technology', status: 'Available', reason: 'New arrival in Technology' },
+        { isbn: '978-0-567890-81-6', title: 'The Psychology of Learning', author: 'Dr. Sarah Brown', category: 'Non-Fiction', status: 'Available', reason: 'Based on your reading history' },
+        { isbn: '978-0-678901-92-7', title: 'Creative Writing Workshop', author: 'Michael Davis', category: 'Fiction', status: 'Available', reason: 'Random discovery' },
+        { isbn: '978-0-789012-03-8', title: 'History of Computing', author: 'Lisa Anderson', category: 'History', status: 'Available', reason: 'Trending now' },
+        { isbn: '978-0-890123-14-9', title: 'Digital Photography', author: 'Tom Martinez', category: 'Technology', status: 'Available', reason: 'New arrival' },
+        { isbn: '978-0-901234-25-0', title: 'Quantum Physics Made Simple', author: 'Dr. Emma White', category: 'Science', status: 'Available', reason: 'Similar interests' },
+        { isbn: '978-0-012345-36-1', title: 'The Future of AI', author: 'Robert Chen', category: 'Technology', status: 'Available', reason: 'Trending topic' }
+    ];
+    
+    // Categorize suggestions
+    currentSuggestions = {
+        historyBased: mockBooks.filter(book => book.reason.includes('history') || book.reason.includes('Similar')).slice(0, 3),
+        trending: mockBooks.filter(book => book.reason.includes('Trending') || book.reason.includes('Popular')).slice(0, 4),
+        newArrivals: mockBooks.filter(book => book.reason.includes('arrival')).slice(0, 4),
+        random: mockBooks.filter(book => book.reason.includes('Random') || book.reason.includes('discovery')).slice(0, 3)
+    };
+    
+    // Add more books to categories if needed
+    if (currentSuggestions.historyBased.length < 3) {
+        currentSuggestions.historyBased.push(...mockBooks.slice(0, 3 - currentSuggestions.historyBased.length));
+    }
+    if (currentSuggestions.trending.length < 4) {
+        currentSuggestions.trending.push(...mockBooks.slice(3, 7));
+    }
+    if (currentSuggestions.newArrivals.length < 4) {
+        currentSuggestions.newArrivals.push(...mockBooks.slice(4, 8));
+    }
+    if (currentSuggestions.random.length < 3) {
+        currentSuggestions.random.push(...mockBooks.slice(7, 10));
+    }
+    
+    displaySuggestions();
+}
+
+function displaySuggestions() {
+    // Hide loading and show content
+    setTimeout(() => {
+        document.getElementById('suggestionsLoading').style.display = 'none';
+        document.getElementById('suggestionsContent').style.display = 'block';
+        
+        // Display each category
+        displayCategorySuggestions('historyBasedSuggestions', currentSuggestions.historyBased, 'Based on your reading pattern');
+        displayListSuggestions('trendingSuggestions', currentSuggestions.trending);
+        displayListSuggestions('newArrivalsSuggestions', currentSuggestions.newArrivals);
+        displayCategorySuggestions('randomSuggestions', currentSuggestions.random, 'Random discoveries');
+    }, 1500);
+}
+
+function displayCategorySuggestions(containerId, books, subtitle) {
+    const container = document.getElementById(containerId);
+    if (!books || books.length === 0) {
+        container.innerHTML = '<div class="col-12"><p class="text-muted text-center">No suggestions available for this category.</p></div>';
+        return;
+    }
+    
+    let html = '';
+    books.forEach(book => {
+        html += `
+            <div class="col-md-4">
+                <div class="card h-100 border-0 shadow-sm suggestion-card">
+                    <div class="card-body">
+                        <h6 class="card-title text-truncate" title="${book.title}">${book.title}</h6>
+                        <p class="card-text text-muted small mb-1">by ${book.author}</p>
+                        <div class="mb-2">
+                            <span class="badge bg-secondary">${book.category}</span>
+                            <span class="badge bg-success">${book.status}</span>
+                        </div>
+                        <p class="card-text small text-info mb-3">
+                            <i class="fas fa-info-circle me-1"></i>${book.reason}
+                        </p>
+                        <div class="d-grid gap-1">
+                            <button class="btn btn-primary btn-sm" onclick="requestSuggestedBook('${book.isbn}', '${book.title}')">
+                                <i class="fas fa-book me-1"></i>Request Book
+                            </button>
+                            <button class="btn btn-outline-secondary btn-sm" onclick="viewBookDetails('${book.isbn}', '${book.title}', '${book.author}', '${book.category}')">
+                                <i class="fas fa-eye me-1"></i>View Details
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        `;
+    });
+    container.innerHTML = html;
+}
+
+function displayListSuggestions(containerId, books) {
+    const container = document.getElementById(containerId);
+    if (!books || books.length === 0) {
+        container.innerHTML = '<p class="text-muted text-center">No suggestions available.</p>';
+        return;
+    }
+    
+    let html = '';
+    books.forEach((book, index) => {
+        html += `
+            <div class="mb-2 p-2 border rounded suggestion-item">
+                <div class="d-flex justify-content-between align-items-start">
+                    <div class="flex-grow-1">
+                        <h6 class="mb-1 suggestion-title">${book.title}</h6>
+                        <small class="text-muted">by ${book.author}</small>
+                        <div class="mt-1">
+                            <span class="badge bg-secondary badge-sm">${book.category}</span>
+                            <span class="badge bg-success badge-sm">${book.status}</span>
+                        </div>
+                    </div>
+                    <div class="text-end">
+                        <button class="btn btn-primary btn-sm mb-1" onclick="requestSuggestedBook('${book.isbn}', '${book.title}')">
+                            <i class="fas fa-book"></i>
+                        </button>
+                        <br>
+                        <button class="btn btn-outline-secondary btn-sm" onclick="viewBookDetails('${book.isbn}', '${book.title}', '${book.author}', '${book.category}')">
+                            <i class="fas fa-eye"></i>
+                        </button>
+                    </div>
+                </div>
+                <small class="text-info d-block mt-1">
+                    <i class="fas fa-lightbulb me-1"></i>${book.reason}
+                </small>
+            </div>
+        `;
+    });
+    container.innerHTML = html;
+}
+
+function requestSuggestedBook(isbn, title) {
+    // Close suggestions modal first
+    const suggestionsModal = bootstrap.Modal.getInstance(document.getElementById('suggestionsModal'));
+    if (suggestionsModal) {
+        suggestionsModal.hide();
+    }
+    
+    // Request the book using existing function
+    requestBook(isbn, title);
+}
+
+function viewBookDetails(isbn, title, author, category) {
+    alert(`Book Details:\n\nTitle: ${title}\nAuthor: ${author}\nCategory: ${category}\nISBN: ${isbn}\n\nThis feature would show full book details including description, reviews, and availability status.`);
+}
+
+function generateRandomSuggestions() {
+    // Show loading state for random section
+    document.getElementById('randomSuggestions').innerHTML = `
+        <div class="col-12 text-center py-3">
+            <div class="spinner-border spinner-border-sm text-warning" role="status"></div>
+            <small class="d-block mt-2">Finding new surprises...</small>
+        </div>
+    `;
+    
+    // Simulate generating new random suggestions
+    setTimeout(() => {
+        const allMockBooks = [
+            { isbn: '978-0-111111-11-1', title: 'Hidden Gems of Literature', author: 'Mystery Author', category: 'Fiction', status: 'Available', reason: 'Random discovery' },
+            { isbn: '978-0-222222-22-2', title: 'Unexpected Science', author: 'Dr. Discovery', category: 'Science', status: 'Available', reason: 'Random surprise' },
+            { isbn: '978-0-333333-33-3', title: 'Art Through Ages', author: 'Creative Mind', category: 'Arts', status: 'Available', reason: 'Serendipitous find' }
+        ];
+        
+        currentSuggestions.random = allMockBooks;
+        displayCategorySuggestions('randomSuggestions', currentSuggestions.random, 'Fresh random picks');
+    }, 1500);
+}
+
+function updateSuggestions() {
+    // Show loading state
+    document.getElementById('suggestionsContent').style.display = 'none';
+    document.getElementById('suggestionsLoading').style.display = 'block';
+    
+    // Regenerate suggestions with new preferences
+    generateSuggestions();
+}
+
+function savePreferences() {
+    const preferences = {
+        category: document.getElementById('preferredCategory').value,
+        readingLevel: document.getElementById('readingLevel').value,
+        bookLength: document.getElementById('bookLength').value,
+        count: document.getElementById('suggestionCount').value
+    };
+    
+    // Save to localStorage
+    localStorage.setItem('book-suggestion-preferences', JSON.stringify(preferences));
+    
+    // Show success message
+    const alert = document.createElement('div');
+    alert.className = 'alert alert-success alert-dismissible fade show position-fixed';
+    alert.style.cssText = 'top: 20px; right: 20px; z-index: 10000; min-width: 300px;';
+    alert.innerHTML = `
+        <i class="fas fa-check-circle me-2"></i>
+        <strong>Preferences Saved!</strong> Your suggestion settings have been saved.
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    `;
+    
+    document.body.appendChild(alert);
+    
+    setTimeout(() => {
+        if (alert.parentNode) {
+            alert.parentNode.removeChild(alert);
+        }
+    }, 3000);
+}
+
+function loadUserPreferences() {
+    const saved = localStorage.getItem('book-suggestion-preferences');
+    if (saved) {
+        try {
+            const preferences = JSON.parse(saved);
+            document.getElementById('preferredCategory').value = preferences.category || 'all';
+            document.getElementById('readingLevel').value = preferences.readingLevel || 'all';
+            document.getElementById('bookLength').value = preferences.bookLength || 'all';
+            document.getElementById('suggestionCount').value = preferences.count || '10';
+        } catch (e) {
+            console.log('Error loading preferences:', e);
+        }
+    }
+}
+
+function exportSuggestions() {
+    // Compile all suggestions
+    const allSuggestions = [
+        ...currentSuggestions.historyBased,
+        ...currentSuggestions.trending,
+        ...currentSuggestions.newArrivals,
+        ...currentSuggestions.random
+    ];
+    
+    if (allSuggestions.length === 0) {
+        alert('No suggestions to export. Please generate suggestions first.');
+        return;
+    }
+    
+    // Create CSV content
+    const csvHeader = 'Title,Author,Category,Status,ISBN,Suggestion Reason\n';
+    const csvContent = allSuggestions.map(book => 
+        `"${book.title}","${book.author}","${book.category}","${book.status}","${book.isbn}","${book.reason}"`
+    ).join('\n');
+    
+    const fullCsv = csvHeader + csvContent;
+    
+    // Create and download file
+    const blob = new Blob([fullCsv], { type: 'text/csv;charset=utf-8;' });
+    const link = document.createElement('a');
+    const url = URL.createObjectURL(blob);
+    link.setAttribute('href', url);
+    link.setAttribute('download', `book_suggestions_${new Date().toISOString().split('T')[0]}.csv`);
+    link.style.visibility = 'hidden';
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    
+    // Show success message
+    const alert = document.createElement('div');
+    alert.className = 'alert alert-info alert-dismissible fade show position-fixed';
+    alert.style.cssText = 'top: 20px; right: 20px; z-index: 10000; min-width: 300px;';
+    alert.innerHTML = `
+        <i class="fas fa-download me-2"></i>
+        <strong>Export Complete!</strong> Your book suggestions have been downloaded.
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    `;
+    
+    document.body.appendChild(alert);
+    
+    setTimeout(() => {
+        if (alert.parentNode) {
+            alert.parentNode.removeChild(alert);
+        }
+    }, 4000);
+}
+
+// Account Management Functions
+function showAccountManagement() {
+    const modal = new bootstrap.Modal(document.getElementById('accountModal'));
+    modal.show();
+    
+    // Load account data
+    loadBorrowingHistory();
+    loadDueDates();
+    loadHolds();
+}
+
+function loadBorrowingHistory() {
+    fetch('/student/borrowing_history')
+    .then(response => response.json())
+    .then(data => {
+        const container = document.getElementById('borrowingHistoryContent');
+        if (data.success && data.history.length > 0) {
+            let html = `
+                <div class="table-responsive">
+                    <table class="table table-striped table-hover">
+                        <thead class="table-dark">
+                            <tr>
+                                <th>Book Title</th>
+                                <th>Author</th>
+                                <th>ISBN</th>
+                                <th>Loan Date</th>
+                                <th>Due Date</th>
+                                <th>Return Date</th>
+                                <th>Status</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+            `;
+            
+            data.history.forEach(loan => {
+                const canRenew = !loan.returned && !loan.overdue && loan.renewals_left > 0;
+                html += `
+                    <tr class="${loan.overdue ? 'table-warning' : ''}">
+                        <td><strong>${loan.title}</strong></td>
+                        <td>${loan.author}</td>
+                        <td><small class="text-muted">${loan.isbn}</small></td>
+                        <td>${loan.loan_date}</td>
+                        <td>${loan.due_date}</td>
+                        <td>${loan.return_date || '-'}</td>
+                        <td>
+                            ${loan.returned ? '<span class="badge bg-success">Returned</span>' : 
+                              loan.overdue ? '<span class="badge bg-danger">Overdue</span>' : 
+                              '<span class="badge bg-primary">Active</span>'}
+                        </td>
+                        <td>
+                            ${canRenew ? 
+                              `<button class="btn btn-sm btn-outline-primary" onclick="renewBook('${loan.isbn}', '${loan.title}')">Renew (${loan.renewals_left} left)</button>` : 
+                              loan.returned ? '' : '<span class="text-muted small">Cannot renew</span>'}
+                        </td>
+                    </tr>
+                `;
+            });
+            
+            html += '</tbody></table></div>';
+            container.innerHTML = html;
+        } else {
+            container.innerHTML = '<p class="text-muted text-center">No borrowing history found.</p>';
+        }
+    })
+    .catch(error => {
+        console.error('Error loading borrowing history:', error);
+        document.getElementById('borrowingHistoryContent').innerHTML = '<p class="text-danger text-center">Failed to load borrowing history.</p>';
+    });
+}
+
+function loadDueDates() {
+    fetch('/student/renewals_info')
+    .then(response => response.json())
+    .then(data => {
+        let html = '';
+        if (data.success && data.renewals && data.renewals.length > 0) {
+            data.renewals.forEach(item => {
+                const isOverdue = item.overdue;
+                const isDueSoon = item.days_until_due <= 3 && item.days_until_due >= 0;
+                
+                html += `
+                    <div class="mb-3 p-3 border rounded ${isOverdue ? 'border-danger bg-light' : isDueSoon ? 'border-warning bg-light' : ''}">
+                        <h6 class="mb-1">${item.title}</h6>
+                        <small class="text-muted">Due: ${item.due_date}</small>
+                        <div class="mt-2">
+                            ${isOverdue ? 
+                              `<span class="badge bg-danger">Overdue by ${Math.abs(item.days_until_due)} days</span>` :
+                              `<span class="badge bg-${isDueSoon ? 'warning' : 'info'}">${item.days_until_due} days left</span>`}
+                            <br><small class="text-muted mt-1">Renewals used: ${item.renewals_used}/${item.renewals_used + item.renewals_left}</small>
+                        </div>
+                        ${item.can_renew ? 
+                          `<button class="btn btn-sm btn-outline-primary mt-2" onclick="renewBook('${item.isbn}', '${item.title}')">Renew (${item.renewals_left} left)</button>` : 
+                          '<small class="text-muted">Cannot renew</small>'}
+                    </div>
+                `;
+            });
+        } else {
+            html = '<p class="text-muted text-center">No current loans to display.</p>';
+        }
+        
+        document.getElementById('dueDatesContent').innerHTML = html;
+    })
+    .catch(error => {
+        console.error('Error loading renewals info:', error);
+        document.getElementById('dueDatesContent').innerHTML = '<p class="text-danger text-center">Failed to load renewal information.</p>';
+    });
+}
+
+function loadHolds() {
+    fetch('/student/holds_info')
+    .then(response => response.json())
+    .then(data => {
+        let html = '';
+        if (data.success && data.holds && data.holds.length > 0) {
+            data.holds.forEach(hold => {
+                html += `
+                    <div class="mb-3 p-3 border rounded">
+                        <h6 class="mb-1">${hold.title}</h6>
+                        <small class="text-muted">by ${hold.author}</small>
+                        <div class="mt-2">
+                            <span class="badge bg-${hold.status === 'Available' ? 'success' : 'info'}">Position ${hold.queue_position} in queue</span>
+                            <small class="text-muted d-block mt-1">Status: ${hold.status}</small>
+                        </div>
+                        <small class="text-muted d-block mt-2">
+                            Reserved: ${hold.reservation_date}<br>
+                            Expires: ${hold.expiry_date}
+                        </small>
+                        <button class="btn btn-sm btn-outline-danger mt-2" onclick="cancelHold('${hold.title}', '${hold.isbn}')">Cancel Hold</button>
+                    </div>
+                `;
+            });
+        } else {
+            html = '<p class="text-muted text-center">No active holds.</p>';
+        }
+        
+        document.getElementById('holdsContent').innerHTML = html;
+    })
+    .catch(error => {
+        console.error('Error loading holds info:', error);
+        document.getElementById('holdsContent').innerHTML = '<p class="text-danger text-center">Failed to load holds information.</p>';
+    });
+}
+
+function renewBook(isbn, title) {
+    if (confirm(`Would you like to renew "${title}"?`)) {
+        showToast('Book Renewal', `Renewal request for "${title}" has been submitted.`, 'info');
+    }
+}
+
+function cancelHold(title, isbn) {
+    if (confirm(`Cancel your hold for "${title}"?`)) {
+        // Make API call to cancel the hold if ISBN is provided
+        if (isbn) {
+            fetch('/student/cancel_hold', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    isbn: isbn,
+                    title: title
+                })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    showToast('Hold Cancelled', `Your hold for "${title}" has been cancelled successfully.`, 'success');
+                } else {
+                    showToast('Cancellation Failed', data.message || 'Failed to cancel hold', 'danger');
+                }
+                loadHolds(); // Refresh the holds list
+            })
+            .catch(error => {
+                console.error('Error cancelling hold:', error);
+                showToast('Error', 'Failed to cancel hold. Please try again.', 'danger');
+                loadHolds(); // Still refresh in case of error
+            });
+        } else {
+            // Fallback for holds without ISBN
+            showToast('Hold Cancelled', `Your hold for "${title}" has been cancelled.`, 'info');
+            loadHolds(); // Refresh the holds list
+        }
+    }
+}
+
+function exportAccountData() {
+    const data = 'Account Data Export\nThis feature would export all account information, borrowing history, holds, and preferences.';
+    const blob = new Blob([data], { type: 'text/plain;charset=utf-8;' });
+    const link = document.createElement('a');
+    link.setAttribute('href', URL.createObjectURL(blob));
+    link.setAttribute('download', `library_account_data_${new Date().toISOString().split('T')[0]}.txt`);
+    link.click();
+    showToast('Export Complete', 'Your account data has been exported successfully.', 'success');
+}
+
+// eResources Functions
+function showEResources() {
+    const modal = new bootstrap.Modal(document.getElementById('eResourcesModal'));
+    modal.show();
+}
+
+function accessResource(name, url) {
+    if (url.startsWith('http')) {
+        showToast('Redirecting', `Opening ${name} in a new tab...`, 'info');
+        // In a real application, this would handle authentication
+        setTimeout(() => {
+            window.open(url, '_blank');
+        }, 1000);
+    } else {
+        showToast('Feature Coming Soon', `${name} will be available in a future update.`, 'warning');
+    }
+}
+
+function bookResearchSession() {
+    showToast('Research Session', 'Booking a 2-hour research session. You will receive a confirmation email shortly.', 'success');
+    const modal = bootstrap.Modal.getInstance(document.getElementById('eResourcesModal'));
+    if (modal) modal.hide();
+}
+
+// Reservations Functions
+function showReservations() {
+    const modal = new bootstrap.Modal(document.getElementById('reservationsModal'));
+    modal.show();
+    loadReservations();
+}
+
+function loadReservations() {
+    // Mock reservations data
+    setTimeout(() => {
+        const mockReservations = [
+            { title: 'The Catcher in the Rye', author: 'J.D. Salinger', requested_date: '2024-01-10', status: 'Waiting', position: 2 },
+            { title: 'Brave New World', author: 'Aldous Huxley', requested_date: '2024-01-08', status: 'Available', position: 0 }
+        ];
+        
+        let html = '';
+        if (mockReservations.length > 0) {
+            html += '<div class="list-group">';
+            mockReservations.forEach(reservation => {
+                html += `
+                    <div class="list-group-item">
+                        <div class="d-flex justify-content-between align-items-start">
+                            <div class="flex-grow-1">
+                                <h6 class="mb-1">${reservation.title}</h6>
+                                <p class="mb-1 text-muted">by ${reservation.author}</p>
+                                <small class="text-muted">Requested: ${reservation.requested_date}</small>
+                            </div>
+                            <div class="text-end">
+                                <span class="badge bg-${reservation.status === 'Available' ? 'success' : 'warning'} mb-2">
+                                    ${reservation.status}
+                                </span>
+                                ${reservation.position > 0 ? `<br><small class="text-muted">Position: ${reservation.position}</small>` : ''}
+                                <br><button class="btn btn-sm btn-outline-danger mt-1" onclick="cancelReservation('${reservation.title}')">Cancel</button>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            });
+            html += '</div>';
+        } else {
+            html = '<p class="text-muted text-center py-4">No active reservations.</p>';
+        }
+        
+        document.getElementById('reservationsContent').innerHTML = html;
+    }, 1000);
+}
+
+function submitReservation() {
+    const title = document.getElementById('reserveBookTitle').value;
+    const notes = document.getElementById('reserveNotes').value;
+    
+    if (!title.trim()) {
+        alert('Please enter a book title or ISBN.');
+        return;
+    }
+    
+    // Simulate reservation submission
+    showToast('Reservation Submitted', `Your reservation request for "${title}" has been submitted.`, 'success');
+    document.getElementById('reservationForm').reset();
+    
+    // Refresh reservations after a short delay
+    setTimeout(() => {
+        loadReservations();
+    }, 1500);
+}
+
+function cancelReservation(title) {
+    if (confirm(`Cancel your reservation for "${title}"?`)) {
+        showToast('Reservation Cancelled', `Your reservation for "${title}" has been cancelled.`, 'info');
+        loadReservations();
+    }
+}
+
+function refreshReservations() {
+    document.getElementById('reservationsContent').innerHTML = `
+        <div class="text-center py-4">
+            <div class="spinner-border" role="status"></div>
+            <p class="mt-2">Refreshing reservations...</p>
+        </div>
+    `;
+    loadReservations();
+}
+
+// Settings Functions
+function showSettings() {
+    const modal = new bootstrap.Modal(document.getElementById('settingsModal'));
+    modal.show();
+    loadSettings();
+}
+
+function loadSettings() {
+    // Load saved settings from localStorage
+    const savedSettings = JSON.parse(localStorage.getItem('dashboard-settings') || '{}');
+    
+    document.getElementById('emailNotifications').checked = savedSettings.emailNotifications !== false;
+    document.getElementById('dueDateReminders').checked = savedSettings.dueDateReminders !== false;
+    document.getElementById('newBookAlerts').checked = savedSettings.newBookAlerts !== false;
+    document.getElementById('reservationUpdates').checked = savedSettings.reservationUpdates !== false;
+    document.getElementById('reminderDays').value = savedSettings.reminderDays || '3';
+    document.getElementById('showQuickStats').checked = savedSettings.showQuickStats !== false;
+    document.getElementById('showAvailableBooks').checked = savedSettings.showAvailableBooks !== false;
+    document.getElementById('showMessages').checked = savedSettings.showMessages !== false;
+    document.getElementById('defaultTab').value = savedSettings.defaultTab || 'dashboard';
+    document.getElementById('mobileOptimized').checked = savedSettings.mobileOptimized !== false;
+    document.getElementById('touchFriendly').checked = savedSettings.touchFriendly !== false;
+    document.getElementById('offlineMode').checked = savedSettings.offlineMode === true;
+}
+
+function saveSettings() {
+    const settings = {
+        emailNotifications: document.getElementById('emailNotifications').checked,
+        dueDateReminders: document.getElementById('dueDateReminders').checked,
+        newBookAlerts: document.getElementById('newBookAlerts').checked,
+        reservationUpdates: document.getElementById('reservationUpdates').checked,
+        reminderDays: document.getElementById('reminderDays').value,
+        showQuickStats: document.getElementById('showQuickStats').checked,
+        showAvailableBooks: document.getElementById('showAvailableBooks').checked,
+        showMessages: document.getElementById('showMessages').checked,
+        defaultTab: document.getElementById('defaultTab').value,
+        mobileOptimized: document.getElementById('mobileOptimized').checked,
+        touchFriendly: document.getElementById('touchFriendly').checked,
+        offlineMode: document.getElementById('offlineMode').checked
+    };
+    
+    localStorage.setItem('dashboard-settings', JSON.stringify(settings));
+    
+    // Apply settings
+    applyLayoutSettings();
+    
+    showToast('Settings Saved', 'Your dashboard settings have been saved successfully.', 'success');
+    
+    const modal = bootstrap.Modal.getInstance(document.getElementById('settingsModal'));
+    if (modal) modal.hide();
+}
+
+function resetSettings() {
+    if (confirm('Reset all settings to defaults? This cannot be undone.')) {
+        localStorage.removeItem('dashboard-settings');
+        localStorage.removeItem('book-suggestion-preferences');
+        showToast('Settings Reset', 'All settings have been reset to defaults.', 'info');
+        
+        // Reload settings
+        loadSettings();
+    }
+}
+
+function applyTheme() {
+    const theme = document.getElementById('themeSelect').value;
+    
+    // Use the dynamic theme system that replaces ALL red colors
+    applyDynamicTheme(theme);
+    
+    // Update color preview
+    const colors = themeColors[theme] || themeColors.default;
+    updateColorPreview(colors.primary);
+    
+    console.log(`🎨 Theme switched to ${theme} - All red elements now use ${colors.primary}`);
+}
+
+function applyFontSize() {
+    const fontSize = document.getElementById('fontSizeSelect').value;
+    document.body.classList.remove('font-small', 'font-medium', 'font-large', 'font-extra-large');
+    document.body.classList.add(`font-${fontSize}`);
+}
+
+function applyLayoutSettings() {
+    const settings = JSON.parse(localStorage.getItem('dashboard-settings') || '{}');
+    
+    // Apply layout visibility settings
+    const quickStatsSection = document.querySelector('.row.g-4.mb-4');
+    const availableBooksSection = document.getElementById('available-books');
+    const messagesSection = document.querySelector('.card.mt-3');
+    
+    if (quickStatsSection) quickStatsSection.style.display = settings.showQuickStats !== false ? 'block' : 'none';
+    if (availableBooksSection) availableBooksSection.style.display = settings.showAvailableBooks !== false ? 'block' : 'none';
+    
+    // Apply mobile and touch-friendly settings
+    if (settings.touchFriendly) {
+        document.body.classList.add('touch-friendly');
+    } else {
+        document.body.classList.remove('touch-friendly');
+    }
+}
+
+function updateColorPreview(color) {
+    const preview = document.getElementById('colorPreview');
+    if (preview) {
+        const badge = preview.querySelector('.badge');
+        if (badge) {
+            badge.style.backgroundColor = color;
+            badge.textContent = 'Sample Color';
+        }
+    }
+}
+
+// Toast Notification System
+function showToast(title, message, type = 'info') {
+    const toastContainer = document.getElementById('toastContainer');
+    const toastId = 'toast-' + Date.now();
+    
+    const iconMap = {
+        'success': 'check-circle',
+        'info': 'info-circle', 
+        'warning': 'exclamation-triangle',
+        'danger': 'exclamation-circle'
+    };
+    
+    const toast = document.createElement('div');
+    toast.className = `toast align-items-center text-bg-${type} border-0`;
+    toast.id = toastId;
+    toast.setAttribute('role', 'alert');
+    toast.innerHTML = `
+        <div class="d-flex">
+            <div class="toast-body">
+                <i class="fas fa-${iconMap[type]} me-2"></i>
+                <strong>${title}:</strong> ${message}
+            </div>
+            <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast"></button>
+        </div>
+    `;
+    
+    toastContainer.appendChild(toast);
+    
+    // Show toast
+    const bsToast = new bootstrap.Toast(toast, {
+        autohide: true,
+        delay: 5000
+    });
+    bsToast.show();
+    
+    // Remove from DOM after hiding
+    toast.addEventListener('hidden.bs.toast', function() {
+        toastContainer.removeChild(toast);
+    });
+}
+
+// Initialize settings on page load
+document.addEventListener('DOMContentLoaded', function() {
+    // Apply saved settings
+    const savedSettings = JSON.parse(localStorage.getItem('dashboard-settings') || '{}');
+    if (Object.keys(savedSettings).length > 0) {
+        // Apply theme
+        document.body.classList.remove('theme-blue', 'theme-green', 'theme-purple', 'theme-dark');
+        if (savedSettings.theme && savedSettings.theme !== 'default') {
+            document.body.classList.add(`theme-${savedSettings.theme}`);
+        }
+        
+        // Apply font size
+        document.body.classList.remove('font-small', 'font-medium', 'font-large', 'font-extra-large');
+        document.body.classList.add(`font-${savedSettings.fontSize || 'medium'}`);
+        
+        // Apply other settings
+        applyLayoutSettings();
+    }
+    
+    // Setup notification reminders (mock)
+    if (savedSettings.dueDateReminders !== false) {
+        // This would typically check for books due soon and show notifications
+        console.log('Due date reminders enabled');
+    }
+});
+
+// Dashboard refresh functionality
+function refreshDashboard() {
+    // Show loading state with a toast notification
+    showToast('Refreshing Dashboard', 'Updating your dashboard data...', 'info');
+    
+    // Add loading animation to refresh button
+    const refreshButtons = document.querySelectorAll('button[onclick="refreshDashboard()"]');
+    refreshButtons.forEach(btn => {
+        const icon = btn.querySelector('i');
+        if (icon) {
+            icon.classList.add('fa-spin');
+        }
+    });
+    
+    // Call the refresh API endpoint
+    fetch('/api/student_dashboard_refresh', {
+        method: 'GET',
+        headers: {
+            'Content-Type': 'application/json',
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            showToast('Dashboard Updated', 'Your dashboard has been refreshed with the latest data!', 'success');
+            
+            // Reload the page to show updated data
+            setTimeout(() => {
+                window.location.reload();
+            }, 1000);
+        } else {
+            showToast('Refresh Failed', data.message || 'Failed to refresh dashboard data', 'danger');
+        }
+    })
+    .catch(error => {
+        console.error('Error refreshing dashboard:', error);
+        showToast('Refresh Error', 'Unable to refresh dashboard. Please try again.', 'danger');
+    })
+    .finally(() => {
+        // Remove loading animation from refresh buttons
+        setTimeout(() => {
+            refreshButtons.forEach(btn => {
+                const icon = btn.querySelector('i');
+                if (icon) {
+                    icon.classList.remove('fa-spin');
+                }
+            });
+        }, 1000);
+    });
+}
+
+// Dynamic Theme System - Replaces ALL red colors with selected theme color
+let themeStyleElement = null;
+
+const themeColors = {
+    default: {
+        primary: '#ea6666',
+        primaryDark: '#a24b4b',
+        primaryLight: '#f0a0a0',
+        bgColor: '#ffffff',
+        textColor: '#212529',
+        cardBg: '#ffffff',
+        borderColor: '#dee2e6',
+        shadowColor: 'rgba(0, 0, 0, 0.1)'
+    },
+    blue: {
+        primary: '#007bff',
+        primaryDark: '#0056b3',
+        primaryLight: '#66b3ff',
+        bgColor: '#ffffff',
+        textColor: '#212529',
+        cardBg: '#ffffff',
+        borderColor: '#dee2e6',
+        shadowColor: 'rgba(0, 0, 0, 0.1)'
+    },
+    green: {
+        primary: '#28a745',
+        primaryDark: '#1e7e34',
+        primaryLight: '#71d171',
+        bgColor: '#ffffff',
+        textColor: '#212529',
+        cardBg: '#ffffff',
+        borderColor: '#dee2e6',
+        shadowColor: 'rgba(0, 0, 0, 0.1)'
+    },
+    purple: {
+        primary: '#6f42c1',
+        primaryDark: '#5a32a3',
+        primaryLight: '#a874e6',
+        bgColor: '#ffffff',
+        textColor: '#212529',
+        cardBg: '#ffffff',
+        borderColor: '#dee2e6',
+        shadowColor: 'rgba(0, 0, 0, 0.1)'
+    },
+    dark: {
+        primary: '#6c757d',
+        primaryDark: '#495057',
+        primaryLight: '#adb5bd',
+        bgColor: '#121212',
+        textColor: '#ffffff',
+        cardBg: '#1e1e1e',
+        borderColor: '#343a40',
+        shadowColor: 'rgba(255, 255, 255, 0.1)'
+    }
+};
+
+function createDynamicThemeCSS(theme) {
+    const colors = themeColors[theme] || themeColors.default;
+    
+    return `
+        /* Dynamic Color Replacement System */
+        :root {
+            --theme-primary: ${colors.primary};
+            --theme-primary-dark: ${colors.primaryDark};
+            --theme-primary-light: ${colors.primaryLight};
+            --theme-bg: ${colors.bgColor};
+            --theme-text: ${colors.textColor};
+            --theme-card-bg: ${colors.cardBg};
+            --theme-border: ${colors.borderColor};
+            --theme-shadow: ${colors.shadowColor};
+        }
+        
+        /* Replace ALL instances of the default red color #ea6666 */
+        * {
+            /* Background color replacements */
+            background-color: ${colors.bgColor} !important;
+        }
+        
+        /* Body and main containers */
+        body {
+            background-color: ${colors.bgColor} !important;
+            color: ${colors.textColor} !important;
+        }
+        
+        /* Hero section and gradients - Replace red gradients */
+        .hero-section,
+        .bg-gradient {
+            background: linear-gradient(135deg, ${colors.primary} 0%, ${colors.primaryDark} 100%) !important;
+        }
+        
+        /* All primary buttons - Replace red buttons */
+        .btn-primary {
+            background-color: ${colors.primary} !important;
+            border-color: ${colors.primary} !important;
+            color: white !important;
+        }
+        
+        .btn-primary:hover,
+        .btn-primary:focus,
+        .btn-primary:active {
+            background-color: ${colors.primaryDark} !important;
+            border-color: ${colors.primaryDark} !important;
+            color: white !important;
+        }
+        
+        /* Outline primary buttons */
+        .btn-outline-primary {
+            color: ${colors.primary} !important;
+            border-color: ${colors.primary} !important;
+            background-color: transparent !important;
+        }
+        
+        .btn-outline-primary:hover,
+        .btn-outline-primary:focus,
+        .btn-outline-primary:active {
+            background-color: ${colors.primary} !important;
+            border-color: ${colors.primary} !important;
+            color: white !important;
+        }
+        
+        /* All text with primary color */
+        .text-primary,
+        .text-primary * {
+            color: ${colors.primary} !important;
+        }
+        
+        /* All backgrounds with primary color */
+        .bg-primary {
+            background-color: ${colors.primary} !important;
+            color: white !important;
+        }
+        
+        /* All borders with primary color */
+        .border-primary {
+            border-color: ${colors.primary} !important;
+        }
+        
+        /* All badges with primary background */
+        .badge.bg-primary,
+        .badge-primary {
+            background-color: ${colors.primary} !important;
+            color: white !important;
+        }
+        
+        /* Cards and modals */
+        .card,
+        .modal-content {
+            background-color: ${colors.cardBg} !important;
+            border-color: ${colors.borderColor} !important;
+            color: ${colors.textColor} !important;
+            box-shadow: 0 2px 4px ${colors.shadowColor} !important;
+        }
+        
+        .card-header {
+            border-bottom-color: ${colors.borderColor} !important;
+        }
+        
+        /* Form controls */
+        .form-control,
+        .form-select,
+        .form-check-input {
+            background-color: ${colors.cardBg} !important;
+            border-color: ${colors.borderColor} !important;
+            color: ${colors.textColor} !important;
+        }
+        
+        .form-control:focus,
+        .form-select:focus {
+            border-color: ${colors.primary} !important;
+            box-shadow: 0 0 0 0.2rem rgba(${hexToRgb(colors.primary)}, 0.25) !important;
+        }
+        
+        /* Tables */
+        .table {
+            color: ${colors.textColor} !important;
+        }
+        
+        .table-hover tbody tr:hover {
+            background-color: rgba(${hexToRgb(colors.primary)}, 0.075) !important;
+        }
+        
+        /* Links */
+        a,
+        .nav-link {
+            color: ${colors.primary} !important;
+        }
+        
+        a:hover,
+        .nav-link:hover {
+            color: ${colors.primaryDark} !important;
+        }
+        
+        /* List groups */
+        .list-group-item {
+            background-color: ${colors.cardBg} !important;
+            border-color: ${colors.borderColor} !important;
+            color: ${colors.textColor} !important;
+        }
+        
+        .list-group-item:hover,
+        .list-group-item-action:hover {
+            background-color: rgba(${hexToRgb(colors.primary)}, 0.1) !important;
+        }
+        
+        /* Alerts */
+        .alert-info {
+            background-color: rgba(${hexToRgb(colors.primary)}, 0.1) !important;
+            border-color: ${colors.primary} !important;
+            color: ${colors.primaryDark} !important;
+        }
+        
+        /* Progress bars */
+        .progress-bar {
+            background-color: ${colors.primary} !important;
+        }
+        
+        /* Suggestion items hover */
+        .suggestion-item:hover {
+            background-color: rgba(${hexToRgb(colors.primary)}, 0.05) !important;
+            border-color: ${colors.primary} !important;
+        }
+        
+        /* Icons with primary color */
+        .text-primary i,
+        .fas.text-primary,
+        .far.text-primary {
+            color: ${colors.primary} !important;
+        }
+        
+        /* Spinners */
+        .spinner-border.text-primary,
+        .text-primary .spinner-border {
+            color: ${colors.primary} !important;
+        }
+        
+        /* Navbar brand */
+        .navbar-brand {
+            color: ${colors.textColor} !important;
+        }
+        
+        /* Modal headers with primary background */
+        .modal-header.bg-primary {
+            background-color: ${colors.primary} !important;
+        }
+        
+        /* Special handling for specific red color replacements */
+        /* Replace the exact red color #ea6666 anywhere it appears */
+        *[style*="#ea6666"],
+        *[style*="rgb(234, 102, 102)"],
+        *[style*="rgba(234, 102, 102"] {
+            color: ${colors.primary} !important;
+            background-color: ${colors.primary} !important;
+            border-color: ${colors.primary} !important;
+        }
+        
+        /* Replace the exact dark red color #a24b4b anywhere it appears */
+        *[style*="#a24b4b"],
+        *[style*="rgb(162, 75, 75)"],
+        *[style*="rgba(162, 75, 75"] {
+            color: ${colors.primaryDark} !important;
+            background-color: ${colors.primaryDark} !important;
+            border-color: ${colors.primaryDark} !important;
+        }
+        
+        /* Font sizes */
+        .font-small { font-size: 0.875rem !important; }
+        .font-medium { font-size: 1rem !important; }
+        .font-large { font-size: 1.125rem !important; }
+        .font-extra-large { font-size: 1.25rem !important; }
+        
+        /* Touch friendly */
+        .touch-friendly .btn { min-height: 44px !important; min-width: 44px !important; }
+        .touch-friendly .btn-sm { min-height: 38px !important; min-width: 38px !important; }
+    `;
+}
+
+function hexToRgb(hex) {
+    const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
+    return result ? 
+        `${parseInt(result[1], 16)}, ${parseInt(result[2], 16)}, ${parseInt(result[3], 16)}` : 
+        '0, 0, 0';
+}
+
+function applyDynamicTheme(theme) {
+    // Remove existing theme styles
+    if (themeStyleElement) {
+        themeStyleElement.remove();
+    }
+    
+    // Create new theme styles
+    themeStyleElement = document.createElement('style');
+    themeStyleElement.textContent = createDynamicThemeCSS(theme);
+    themeStyleElement.id = 'dynamic-theme-styles';
+    document.head.appendChild(themeStyleElement);
+    
+    // Apply theme class to body
+    document.body.className = document.body.className.replace(/theme-\w+/g, '');
+    if (theme !== 'default') {
+        document.body.classList.add(`theme-${theme}`);
+    }
+    
+    console.log(`✅ Applied ${theme} theme - All red colors replaced with ${themeColors[theme]?.primary || themeColors.default.primary}`);
+}
+</script>
+{% endblock %}

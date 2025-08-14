@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Dashboard - Library</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <style>
+        body {
+            background: linear-gradient(135deg, #fff 0%, #d70000 60%, #222 100%);
+            min-height: 100vh;
+        }
+        header {
+            background: #d70000;
+            color: #fff;
+        }
+        .container {
+            background: #fff;
+            border-radius: 12px;
+            box-shadow: 0 4px 24px rgba(34,34,34,0.07);
+            padding: 2rem;
+            margin-top: 2rem;
+        }
+        #functionality-buttons button {
+            background: #222;
+            color: #fff;
+            border: 2px solid #d70000;
+            margin: 0.5rem;
+            border-radius: 8px;
+            padding: 0.7rem 1.5rem;
+            font-weight: bold;
+            transition: background 0.2s, color 0.2s;
+        }
+        #functionality-buttons button:hover {
+            background: #d70000;
+            color: #fff;
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <h1>Library Dashboard</h1>
+        <a href="{{ url_for('logout') }}" style="float:right;color:#fff;">Logout</a>
+    </header>
+    <div class="container">
+        <div id="functionality-buttons"></div>
+    </div>
+    <script src="{{ url_for('static', filename='js/script.js') }}"></script>
+</body>
+</html>

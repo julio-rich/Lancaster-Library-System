@@ -1,0 +1,71 @@
+{% extends "base.html" %}
+
+{% block title %}Add Member - Lancaster University Library{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-lg-6">
+        <div class="card shadow">
+            <div class="card-header bg-success text-white">
+                <h4 class="card-title mb-0">
+                    <i class="fas fa-user-plus me-2"></i>Add New Member
+                </h4>
+            </div>
+            <div class="card-body">
+                <form method="POST">
+                    <div class="mb-3">
+                        <label for="name" class="form-label">Full Name *</label>
+                        <input type="text" class="form-control" id="name" name="name" required
+                               placeholder="Enter member's full name">
+                    </div>
+                    <div class="mb-3">
+                        <label for="contact" class="form-label">Contact Information *</label>
+                        <textarea class="form-control" id="contact" name="contact" rows="3" required
+                                  placeholder="Email: member@example.com&#10;Phone: (555) 123-4567&#10;Address: 123 Main St, City, State"></textarea>
+                        <div class="form-text">
+                            <i class="fas fa-info-circle me-1"></i>
+                            Include email address for reminder notifications
+                        </div>
+                    </div>
+                    
+                    <div class="d-flex justify-content-between">
+                        <div>
+                            {% if session.user_type == 'librarian' %}
+                                <a href="{{ url_for('librarian_dashboard') }}" class="btn btn-outline-primary">
+                                    <i class="fas fa-arrow-left me-2"></i>Return to Dashboard
+                                </a>
+                            {% elif session.user_type == 'student' %}
+                                <a href="{{ url_for('student_dashboard') }}" class="btn btn-outline-success">
+                                    <i class="fas fa-arrow-left me-2"></i>Return to Dashboard
+                                </a>
+                            {% endif %}
+                        </div>
+                        <div class="d-flex gap-2">
+                            <a href="{{ url_for('members') }}" class="btn btn-outline-secondary">
+                                <i class="fas fa-times me-2"></i>Cancel
+                            </a>
+                            <button type="submit" class="btn btn-success">
+                                <i class="fas fa-save me-2"></i>Add Member
+                            </button>
+                        </div>
+                    </div>
+                </form>
+            </div>
+        </div>
+        
+        <div class="card mt-4">
+            <div class="card-body">
+                <h6 class="card-title">
+                    <i class="fas fa-lightbulb me-2"></i>Member Registration Tips
+                </h6>
+                <ul class="mb-0">
+                    <li>Include a valid email address for automated reminders</li>
+                    <li>Verify contact information is current and accurate</li>
+                    <li>Members receive a unique ID upon registration</li>
+                    <li>Registration date is automatically recorded</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,174 @@
+{% extends "base.html" %}
+
+{% block title %}Analytics Dashboard - Lancaster University Library{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h2><i class="fas fa-chart-bar me-3"></i>Analytics Dashboard</h2>
+    <a href="{{ url_for('librarian_dashboard') }}" class="btn btn-outline-danger">
+        <i class="fas fa-arrow-left me-2"></i>Back to Dashboard
+    </a>
+</div>
+
+<!-- Popular Books Section -->
+<div class="row mb-4">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header">
+                <h5><i class="fas fa-star me-2"></i>Most Popular Books</h5>
+            </div>
+            <div class="card-body">
+                {% if popular_books %}
+                <div class="table-responsive">
+                    <table class="table table-hover">
+                        <thead>
+                            <tr>
+                                <th>Rank</th>
+                                <th>ISBN</th>
+                                <th>Title</th>
+                                <th>Author</th>
+                                <th>Total Loans</th>
+                                <th>Average Rating</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for book in popular_books %}
+                            <tr>
+                                <td>{{ loop.index }}</td>
+                                <td><code>{{ book[0] }}</code></td>
+                                <td><strong>{{ book[1] }}</strong></td>
+                                <td>{{ book[2] }}</td>
+                                <td><span class="badge bg-danger">{{ book[3] }}</span></td>
+                                <td>
+                                    {% if book[4] > 0 %}
+                                        <span class="badge bg-warning">{{ "%.1f"|format(book[4]) }}★</span>
+                                    {% else %}
+                                        <span class="text-muted">No ratings</span>
+                                    {% endif %}
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                {% else %}
+                <p class="text-muted text-center py-4">No loan data available yet.</p>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Member Activity Stats -->
+<div class="row mb-4">
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-header">
+                <h5><i class="fas fa-users me-2"></i>Member Statistics</h5>
+            </div>
+            <div class="card-body">
+                {% if member_stats %}
+                <div class="row text-center">
+                    <div class="col-6">
+                        <h3 class="text-danger">{{ member_stats[0] }}</h3>
+                        <p class="text-muted">Total Members</p>
+                    </div>
+                    <div class="col-6">
+                        <h3 class="text-success">{{ member_stats[1] }}</h3>
+                        <p class="text-muted">Active Members</p>
+                    </div>
+                </div>
+                <div class="row text-center">
+                    <div class="col-6">
+                        <h3 class="text-danger">{{ member_stats[2] }}</h3>
+                        <p class="text-muted">Inactive Members</p>
+                    </div>
+                    <div class="col-6">
+                        <h3 class="text-danger">{{ member_stats[3] }}</h3>
+                        <p class="text-muted">New This Month</p>
+                    </div>
+                </div>
+                {% else %}
+                <p class="text-muted">No member data available.</p>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-header">
+                <h5><i class="fas fa-dollar-sign me-2"></i>Revenue Overview</h5>
+            </div>
+            <div class="card-body">
+                {% if revenue %}
+                <div class="row text-center">
+                    <div class="col-4">
+                        <h4 class="text-success">${{ "%.2f"|format(revenue[0] or 0) }}</h4>
+                        <p class="text-muted">Total Revenue</p>
+                    </div>
+                    <div class="col-4">
+                        <h4 class="text-warning">${{ "%.2f"|format(revenue[1] or 0) }}</h4>
+                        <p class="text-muted">Pending</p>
+                    </div>
+                    <div class="col-4">
+                        <h4 class="text-danger">{{ revenue[2] or 0 }}</h4>
+                        <p class="text-muted">Total Fines</p>
+                    </div>
+                </div>
+                {% else %}
+                <p class="text-muted">No financial data available.</p>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Loan Trends -->
+<div class="row mb-4">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header">
+                <h5><i class="fas fa-chart-line me-2"></i>Loan Trends (Last 30 Days)</h5>
+            </div>
+            <div class="card-body">
+                {% if loan_trends %}
+                <div class="table-responsive">
+                    <table class="table table-sm">
+                        <thead>
+                            <tr>
+                                <th>Date</th>
+                                <th>Number of Loans</th>
+                                <th>Trend</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% set max_loans = loan_trends|map(attribute=1)|max %}
+                            {% for trend in loan_trends[-10:] %}
+                            <tr>
+                                <td>{{ trend[0] }}</td>
+                                <td><span class="badge bg-danger">{{ trend[1] }}</span></td>
+                                <td>
+                                    <div class="progress" style="height: 10px;">
+                                        <div class="progress-bar bg-danger"
+                                            role="progressbar"
+                                            
+                                            aria-valuenow="{{ trend[1] }}"
+                                            aria-valuemin="0"
+                                            aria-valuemax="{{ max_loans }}">
+                                        </div>
+                                    </div>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                {% else %}
+                <p class="text-muted text-center py-4">No loan trend data available.</p>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

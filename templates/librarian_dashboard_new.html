@@ -1,0 +1,133 @@
+{% extends "base.html" %}
+
+{% block title %}Librarian Dashboard - Lancaster University Library{% endblock %}
+
+{% block content %}
+<!-- Welcome Section -->
+<div class="hero-section bg-gradient text-white rounded-3 p-4 mb-4">
+    <div class="row align-items-center">
+        <div class="col-lg-8">
+            <h2 class="mb-2">Welcome, Librarian!</h2>
+            <p class="mb-0">Manage the library system efficiently and oversee operations.</p>
+        </div>
+        <div class="col-lg-4 text-end">
+            <a href="{{ url_for('logout') }}" class="btn btn-outline-light">
+                <i class="fas fa-sign-out-alt me-2"></i>Logout
+            </a>
+        </div>
+    </div>
+</div>
+
+<!-- Quick Stats -->
+<div class="row g-4 mb-4">
+    <div class="col-md-3">
+        <div class="card text-center">
+            <div class="card-body">
+                <i class="fas fa-book text-primary display-6 mb-2"></i>
+                <h4>{{ stats.total_books }}</h4>
+                <p class="text-muted mb-0">Total Books</p>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card text-center">
+            <div class="card-body">
+                <i class="fas fa-check-circle text-success display-6 mb-2"></i>
+                <h4>{{ stats.available_books }}</h4>
+                <p class="text-muted mb-0">Available Books</p>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card text-center">
+            <div class="card-body">
+                <i class="fas fa-users text-info display-6 mb-2"></i>
+                <h4>{{ stats.total_members }}</h4>
+                <p class="text-muted mb-0">Members</p>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card text-center">
+            <div class="card-body">
+                <i class="fas fa-handshake text-warning display-6 mb-2"></i>
+                <h4>{{ stats.active_loans }}</h4>
+                <p class="text-muted mb-0">Active Loans</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row g-4">
+    <div class="col-lg-6">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="card-title mb-0">Manage Books</h5>
+            </div>
+            <div class="card-body">
+                <button class="btn btn-outline-primary w-100" onclick="window.location.href='{{ url_for('add_book') }}'">
+                    <i class="fas fa-plus-circle me-2"></i>Add Book
+                </button>
+                <button class="btn btn-outline-secondary w-100 mt-2" onclick="window.location.href='{{ url_for('books') }}'">
+                    <i class="fas fa-list me-2"></i>View All Books
+                </button>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-lg-6">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="card-title mb-0">Manage Members</h5>
+            </div>
+            <div class="card-body">
+                <button class="btn btn-outline-success w-100" onclick="window.location.href='{{ url_for('add_member') }}'">
+                    <i class="fas fa-user-plus me-2"></i>Add Member
+                </button>
+                <button class="btn btn-outline-secondary w-100 mt-2" onclick="window.location.href='{{ url_for('members') }}'">
+                    <i class="fas fa-users me-2"></i>View All Members
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row g-4 mt-4">
+    <div class="col-lg-6">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="card-title mb-0">Notifications</h5>
+            </div>
+            <div class="card-body">
+                {% if stats.overdue_loans %}
+                <div class="alert alert-danger" role="alert">
+                    <i class="fas fa-exclamation-triangle me-2"></i>
+                    <strong>{{ stats.overdue_loans }} overdue books!</strong>
+                </div>
+                {% else %}
+                <div class="alert alert-success" role="alert">
+                    <i class="fas fa-check me-2"></i>
+                    All loans are current. No overdue books.
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    <div class="col-lg-6">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="card-title mb-0">Actions</h5>
+            </div>
+            <div class="card-body">
+                <button class="btn btn-outline-warning w-100 mb-2" onclick="window.location.href='{{ url_for('loans') }}'">
+                    <i class="fas fa-handshake me-2"></i>Manage Loans
+                </button>
+                <button class="btn btn-outline-info w-100" onclick="window.location.href='{{ url_for('send_reminders') }}'">
+                    <i class="fas fa-bell me-2"></i>Send Reminders
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

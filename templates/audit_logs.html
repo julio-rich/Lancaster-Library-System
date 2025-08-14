@@ -1,0 +1,272 @@
+{% extends "base.html" %}
+
+{% block title %}Audit Logs - Lancaster University Library{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <div>
+                    <h2>
+                        <i class="fas fa-history me-3"></i>Audit Logs
+                    </h2>
+                    <p class="text-muted">Track system activities and user actions</p>
+                </div>
+                <div>
+                    <a href="{{ url_for('system_settings') }}" class="btn btn-outline-info me-2">
+                        <i class="fas fa-cog me-2"></i>System Settings
+                    </a>
+                    <a href="{{ url_for('librarian_dashboard') }}" class="btn btn-outline-secondary">
+                        <i class="fas fa-arrow-left me-2"></i>Back to Dashboard
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Filter Section -->
+    <div class="card shadow-sm mb-4">
+        <div class="card-header bg-light">
+            <h5 class="mb-0"><i class="fas fa-filter me-2"></i>Filter Logs</h5>
+        </div>
+        <div class="card-body">
+            <form method="GET" action="{{ url_for('audit_logs') }}">
+                <div class="row g-3">
+                    <div class="col-md-3">
+                        <label for="user_id" class="form-label">User</label>
+                        <select class="form-select" id="user_id" name="user_id">
+                            <option value="">All Users</option>
+                            {% for user in users %}
+                            <option value="{{ user[0] }}" {% if request.args.get('user_id') == user[0]|string %}selected{% endif %}>
+                                {{ user[1] }}
+                            </option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="col-md-3">
+                        <label for="action" class="form-label">Action</label>
+                        <input type="text" class="form-control" id="action" name="action" 
+                               placeholder="Search actions..." value="{{ request.args.get('action', '') }}">
+                    </div>
+                    <div class="col-md-3">
+                        <label for="limit" class="form-label">Records</label>
+                        <select class="form-select" id="limit" name="limit">
+                            <option value="50" {% if request.args.get('limit', '100') == '50' %}selected{% endif %}>50</option>
+                            <option value="100" {% if request.args.get('limit', '100') == '100' %}selected{% endif %}>100</option>
+                            <option value="200" {% if request.args.get('limit', '100') == '200' %}selected{% endif %}>200</option>
+                            <option value="500" {% if request.args.get('limit', '100') == '500' %}selected{% endif %}>500</option>
+                        </select>
+                    </div>
+                    <div class="col-md-3">
+                        <label class="form-label">&nbsp;</label>
+                        <div class="d-flex gap-2">
+                            <button type="submit" class="btn btn-primary">
+                                <i class="fas fa-search me-1"></i>Filter
+                            </button>
+                            <a href="{{ url_for('audit_logs') }}" class="btn btn-outline-secondary">
+                                <i class="fas fa-undo me-1"></i>Reset
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Audit Logs Table -->
+    <div class="card shadow-sm">
+        <div class="card-header bg-primary text-white">
+            <h5 class="mb-0"><i class="fas fa-list me-2"></i>Activity Log ({{ logs|length }} records)</h5>
+        </div>
+        <div class="card-body p-0">
+            {% if logs %}
+            <div class="table-responsive">
+                <table class="table table-hover table-striped mb-0">
+                    <thead class="table-dark">
+                        <tr>
+                            <th>Timestamp</th>
+                            <th>User</th>
+                            <th>Action</th>
+                            <th>Table</th>
+                            <th>Record ID</th>
+                            <th>Details</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for log in logs %}
+                        <tr>
+                            <td>
+                                <small class="text-muted">{{ log[6] }}</small>
+                            </td>
+                            <td>
+                                {% if log[8] %}
+                                <span class="badge bg-info">{{ log[8] }}</span>
+                                {% else %}
+                                <span class="badge bg-secondary">System</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                <strong>{{ log[2] }}</strong>
+                            </td>
+                            <td>
+                                {% if log[3] %}
+                                <span class="badge bg-light text-dark">{{ log[3] }}</span>
+                                {% else %}
+                                <span class="text-muted">-</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                {% if log[4] %}
+                                <code class="small">{{ log[4] }}</code>
+                                {% else %}
+                                <span class="text-muted">-</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                {% if log[5] or log[6] %}
+                                <button class="btn btn-sm btn-outline-secondary" 
+                                        onclick="viewLogDetails({{ log[0] }}, '{{ log[2] }}', '{{ log[5] or '' }}', '{{ log[6] or '' }}')">
+                                    <i class="fas fa-eye"></i>
+                                </button>
+                                {% else %}
+                                <span class="text-muted">-</span>
+                                {% endif %}
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            {% else %}
+            <div class="text-center py-5">
+                <i class="fas fa-search fa-3x text-muted mb-3"></i>
+                <h4>No Audit Logs Found</h4>
+                <p class="text-muted">No logs match your current filter criteria.</p>
+                <a href="{{ url_for('audit_logs') }}" class="btn btn-primary">
+                    <i class="fas fa-refresh me-2"></i>View All Logs
+                </a>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+
+    {% if logs and logs|length >= (request.args.get('limit', 100)|int) %}
+    <div class="alert alert-info mt-3">
+        <i class="fas fa-info-circle me-2"></i>
+        <strong>Note:</strong> Showing maximum {{ request.args.get('limit', 100) }} records. 
+        Increase the limit or use filters to see more specific results.
+    </div>
+    {% endif %}
+</div>
+
+<!-- Log Details Modal -->
+<div class="modal fade" id="logDetailsModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">
+                    <i class="fas fa-info-circle me-2"></i>Log Entry Details
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div class="mb-3">
+                    <label class="form-label"><strong>Action:</strong></label>
+                    <p id="modalAction" class="text-muted"></p>
+                </div>
+                <div class="mb-3">
+                    <label class="form-label"><strong>Old Values:</strong></label>
+                    <pre id="modalOldValues" class="bg-light p-3 rounded small"></pre>
+                </div>
+                <div class="mb-3">
+                    <label class="form-label"><strong>New Values:</strong></label>
+                    <pre id="modalNewValues" class="bg-light p-3 rounded small"></pre>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+function viewLogDetails(logId, action, oldValues, newValues) {
+    document.getElementById('modalAction').textContent = action;
+    document.getElementById('modalOldValues').textContent = oldValues || 'No old values recorded';
+    document.getElementById('modalNewValues').textContent = newValues || 'No new values recorded';
+    
+    const modal = new bootstrap.Modal(document.getElementById('logDetailsModal'));
+    modal.show();
+}
+
+// Auto-refresh every 30 seconds
+setInterval(function() {
+    const urlParams = new URLSearchParams(window.location.search);
+    const autoRefresh = urlParams.get('auto_refresh');
+    
+    if (autoRefresh === 'true') {
+        window.location.reload();
+    }
+}, 30000);
+
+// Add auto-refresh toggle
+document.addEventListener('DOMContentLoaded', function() {
+    const urlParams = new URLSearchParams(window.location.search);
+    const currentUrl = window.location.pathname;
+    
+    // Add auto-refresh button to the page
+    const autoRefreshBtn = document.createElement('button');
+    autoRefreshBtn.className = 'btn btn-sm btn-outline-info ms-2';
+    autoRefreshBtn.innerHTML = '<i class="fas fa-sync-alt me-1"></i>Auto Refresh';
+    autoRefreshBtn.onclick = function() {
+        urlParams.set('auto_refresh', 'true');
+        window.location.href = currentUrl + '?' + urlParams.toString();
+    };
+    
+    // Add to the header area
+    const headerDiv = document.querySelector('.d-flex.justify-content-between .btn-group, .d-flex.justify-content-between div:last-child');
+    if (headerDiv) {
+        headerDiv.appendChild(autoRefreshBtn);
+    }
+});
+</script>
+
+<style>
+.table th {
+    border-top: none;
+    font-weight: 600;
+}
+
+.table tbody tr:hover {
+    background-color: rgba(0, 123, 255, 0.1);
+}
+
+code {
+    background-color: #f8f9fa;
+    padding: 2px 4px;
+    border-radius: 3px;
+    font-size: 0.875em;
+}
+
+pre {
+    max-height: 200px;
+    overflow-y: auto;
+    white-space: pre-wrap;
+}
+
+.badge {
+    font-size: 0.875em;
+}
+
+.card {
+    border: none;
+    border-radius: 8px;
+}
+
+.table-striped tbody tr:nth-of-type(odd) {
+    background-color: rgba(248, 249, 250, 0.5);
+}
+</style>
+{% endblock %}

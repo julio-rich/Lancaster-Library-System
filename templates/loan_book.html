@@ -1,0 +1,609 @@
+{% extends "base.html" %}
+
+{% block title %}Loan Book - Lancaster University Library{% endblock %}
+
+{% block content %}
+<style>
+.search-dropdown {
+    position: absolute;
+    top: 100%;
+    left: 0;
+    right: 0;
+    background: white;
+    border: 1px solid #ddd;
+    border-radius: 0.375rem;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    z-index: 1050;
+    max-height: 300px;
+    overflow-y: auto;
+}
+
+.search-item {
+    padding: 0.75rem;
+    cursor: pointer;
+    border-bottom: 1px solid #f0f0f0;
+}
+
+.search-item:hover {
+    background-color: #f8f9fa;
+}
+
+.search-item:last-child {
+    border-bottom: none;
+}
+
+.member-details {
+    background: linear-gradient(135deg, #e3f2fd 0%, #f8f9fa 100%);
+    border-left: 4px solid #2196f3;
+    padding: 1.5rem;
+    border-radius: 0.5rem;
+    margin-top: 1rem;
+}
+
+.book-details {
+    background: linear-gradient(135deg, #e8f5e8 0%, #f8f9fa 100%);
+    border-left: 4px solid #28a745;
+    padding: 1.5rem;
+    border-radius: 0.5rem;
+    margin-top: 1rem;
+}
+
+.quick-select-btn {
+    transition: all 0.3s ease;
+}
+
+.quick-select-btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+}
+</style>
+
+<div class="container-fluid">
+    <!-- Book Requests Alert -->
+    {% if book_requests %}
+    <div class="alert alert-warning alert-dismissible fade show" role="alert">
+        <i class="fas fa-bell me-2"></i>
+        <strong>{{ book_requests|length }} Book Request(s) Pending!</strong>
+        <a href="#bookRequests" class="alert-link ms-2" data-bs-toggle="collapse">View Details</a>
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    </div>
+    
+    <div class="collapse mb-4" id="bookRequests">
+        <div class="card border-warning">
+            <div class="card-header bg-warning text-dark">
+                <h5 class="mb-0"><i class="fas fa-book me-2"></i>Pending Book Requests</h5>
+            </div>
+            <div class="card-body">
+                <div class="row g-3">
+                    {% for request in book_requests %}
+                    <div class="col-md-6">
+                        <div class="card h-100 border-start border-primary border-4">
+                            <div class="card-body">
+                                <div class="d-flex justify-content-between align-items-start mb-2">
+                                    <h6 class="card-title text-primary mb-1">{{ request.subject }}</h6>
+                                    <span class="badge bg-warning">{{ request.priority|title }}</span>
+                                </div>
+                                <p class="card-text small mb-2">{{ request.message[:100] }}{% if request.message|length > 100 %}...{% endif %}</p>
+                                <div class="mb-3">
+                                    <strong class="text-success">From:</strong> {{ request.sender_name }}<br>
+                                    <strong class="text-info">Member ID:</strong> {{ request.member_id }}<br>
+                                    <strong class="text-muted">Date:</strong> {{ request.sent_date[:16] }}
+                                </div>
+                                <div class="d-flex gap-2">
+                                    <button class="btn btn-sm btn-primary quick-select-btn" 
+                                            onclick="quickSelectMember('{{ request.member_id }}', '{{ request.sender_name }}')"
+                                            data-bs-toggle="tooltip" 
+                                            title="Auto-select this member for loan processing">
+                                        <i class="fas fa-user-check me-1"></i>Select Member
+                                    </button>
+                                    <button class="btn btn-sm btn-outline-info" 
+                                            onclick="viewMemberDetails('{{ request.member_id }}')"
+                                            data-bs-toggle="tooltip" 
+                                            title="View member details and loan history">
+                                        <i class="fas fa-info-circle me-1"></i>Details
+                                    </button>
+                                    <a href="{{ url_for('mark_message_read', message_id=request.message_id) }}" 
+                                       class="btn btn-sm btn-outline-success"
+                                       data-bs-toggle="tooltip" 
+                                       title="Mark as processed">
+                                        <i class="fas fa-check"></i>
+                                    </a>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+
+    <div class="row">
+        <!-- Main Loan Processing Form -->
+        <div class="col-lg-8">
+            <div class="card shadow">
+                <div class="card-header bg-primary text-white">
+                    <h4 class="card-title mb-0">
+                        <i class="fas fa-handshake me-2"></i>Process Book Loan
+                    </h4>
+                </div>
+                <div class="card-body">
+                    <form method="POST" id="loanForm">
+                        <div class="row g-3">
+                            <!-- Book Search Section -->
+                            <div class="col-md-6">
+                                <label class="form-label">Search & Select Book *</label>
+                                <div class="position-relative">
+                                    <div class="input-group">
+                                        <span class="input-group-text"><i class="fas fa-search"></i></span>
+                                        <input type="text" class="form-control" id="bookSearch" 
+                                               placeholder="Search by title, author, or ISBN..." 
+                                               autocomplete="off">
+                                    </div>
+                                    <div class="search-dropdown d-none" id="bookDropdown"></div>
+                                </div>
+                                <select class="form-select mt-2" id="isbn" name="isbn" required>
+                                    <option value="">Choose a book...</option>
+                                    {% for book in books %}
+                                    <option value="{{ book[0] }}" data-title="{{ book[1] }}" data-author="{{ book[2] }}">
+                                        {{ book[1] }} by {{ book[2] }} ({{ book[0] }})
+                                    </option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                            
+                            <!-- Member Search Section -->
+                            <div class="col-md-6">
+                                <label class="form-label">Search & Select Member *</label>
+                                <div class="position-relative">
+                                    <div class="input-group">
+                                        <span class="input-group-text"><i class="fas fa-search"></i></span>
+                                        <input type="text" class="form-control" id="memberSearch" 
+                                               placeholder="Search by name, ID, or email..." 
+                                               autocomplete="off">
+                                    </div>
+                                    <div class="search-dropdown d-none" id="memberDropdown"></div>
+                                </div>
+                                <select class="form-select mt-2" id="member_id" name="member_id" required>
+                                    <option value="">Choose a member...</option>
+                                    {% for member in members %}
+                                    <option value="{{ member[0] }}" data-name="{{ member[1] }}" data-email="{{ member[2] if member[2] else '' }}">
+                                        {{ member[1] }} (ID: {{ member[0] }})
+                                    </option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                        </div>
+                        
+                        <!-- Selected Book Details -->
+                        <div id="bookDetails" class="book-details d-none">
+                            <h6 class="text-success mb-3"><i class="fas fa-book me-2"></i>Selected Book Details</h6>
+                            <div class="row">
+                                <div class="col-md-8">
+                                    <p class="mb-1"><strong>Title:</strong> <span id="selectedBookTitle">-</span></p>
+                                    <p class="mb-1"><strong>Author:</strong> <span id="selectedBookAuthor">-</span></p>
+                                    <p class="mb-1"><strong>ISBN:</strong> <span id="selectedBookISBN">-</span></p>
+                                </div>
+                                <div class="col-md-4">
+                                    <p class="mb-1"><strong>Status:</strong> <span class="badge bg-success">Available</span></p>
+                                    <p class="mb-1"><strong>Location:</strong> <span id="selectedBookLocation">Main Library</span></p>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Selected Member Details -->
+                        <div id="memberDetails" class="member-details d-none">
+                            <h6 class="text-primary mb-3"><i class="fas fa-user me-2"></i>Selected Member Details</h6>
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <p class="mb-1"><strong>Name:</strong> <span id="selectedMemberName">-</span></p>
+                                    <p class="mb-1"><strong>Member ID:</strong> <span id="selectedMemberID">-</span></p>
+                                    <p class="mb-1"><strong>Email:</strong> <span id="selectedMemberEmail">-</span></p>
+                                </div>
+                                <div class="col-md-6">
+                                    <p class="mb-1"><strong>Current Loans:</strong> <span id="memberCurrentLoans" class="badge bg-info">-</span></p>
+                                    <p class="mb-1"><strong>Overdue Books:</strong> <span id="memberOverdueBooks" class="badge bg-warning">-</span></p>
+                                    <p class="mb-1"><strong>Outstanding Fines:</strong> <span id="memberFines" class="badge bg-danger">-</span></p>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="alert alert-info mt-3" role="alert">
+                            <i class="fas fa-info-circle me-2"></i>
+                            <strong>Loan Terms:</strong> Books are loaned for 14 days. Late returns may incur fees.
+                        </div>
+                        
+                        <div class="d-flex justify-content-end gap-2 mt-4">
+                            <a href="{{ url_for('loans') }}" class="btn btn-outline-secondary">
+                                <i class="fas fa-times me-2"></i>Cancel
+                            </a>
+                            <button type="submit" class="btn btn-primary" id="submitBtn" disabled>
+                                <i class="fas fa-handshake me-2"></i>Create Loan
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Sidebar with Statistics and Recent Activity -->
+        <div class="col-lg-4">
+            <div class="row g-3">
+                <!-- Statistics Cards -->
+                <div class="col-12">
+                    <div class="card border-primary">
+                        <div class="card-header bg-primary text-white">
+                            <h6 class="mb-0"><i class="fas fa-chart-bar me-2"></i>Loan Statistics</h6>
+                        </div>
+                        <div class="card-body">
+                            <div class="row g-3">
+                                <div class="col-6">
+                                    <div class="text-center">
+                                        <i class="fas fa-book fa-2x text-primary mb-2"></i>
+                                        <h4 class="mb-1">{{ books|length }}</h4>
+                                        <small class="text-muted">Available Books</small>
+                                    </div>
+                                </div>
+                                <div class="col-6">
+                                    <div class="text-center">
+                                        <i class="fas fa-users fa-2x text-success mb-2"></i>
+                                        <h4 class="mb-1">{{ members|length }}</h4>
+                                        <small class="text-muted">Active Members</small>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Quick Actions -->
+                <div class="col-12">
+                    <div class="card border-success">
+                        <div class="card-header bg-success text-white">
+                            <h6 class="mb-0"><i class="fas fa-bolt me-2"></i>Quick Actions</h6>
+                        </div>
+                        <div class="card-body">
+                            <div class="d-grid gap-2">
+                                <a href="{{ url_for('loans') }}" class="btn btn-outline-primary btn-sm">
+                                    <i class="fas fa-list me-2"></i>View All Loans
+                                </a>
+                                <a href="{{ url_for('books') }}" class="btn btn-outline-info btn-sm">
+                                    <i class="fas fa-book me-2"></i>Browse Books
+                                </a>
+                                <a href="{{ url_for('members') }}" class="btn btn-outline-success btn-sm">
+                                    <i class="fas fa-users me-2"></i>View Members
+                                </a>
+                                <a href="{{ url_for('add_book') }}" class="btn btn-outline-warning btn-sm">
+                                    <i class="fas fa-plus me-2"></i>Add New Book
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Recent Activity -->
+                <div class="col-12">
+                    <div class="card border-info">
+                        <div class="card-header bg-info text-white">
+                            <h6 class="mb-0"><i class="fas fa-history me-2"></i>Recent Loans</h6>
+                        </div>
+                        <div class="card-body">
+                            {% if recent_loans %}
+                                {% for loan in recent_loans[:5] %}
+                                <div class="d-flex justify-content-between align-items-center mb-2">
+                                    <div>
+                                        <small class="fw-bold">{{ loan[3] }}</small><br>
+                                        <small class="text-muted">{{ loan[1] }}</small>
+                                    </div>
+                                    <small class="text-muted">{{ loan[2][:5] }}</small>
+                                </div>
+                                <hr class="my-2">
+                                {% endfor %}
+                            {% else %}
+                                <p class="text-muted small mb-0">No recent loans found</p>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Member Details Modal -->
+<div class="modal fade" id="memberDetailsModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">
+                    <i class="fas fa-user me-2"></i>Member Details
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body" id="memberModalContent">
+                <div class="text-center py-4">
+                    <div class="spinner-border" role="status">
+                        <span class="visually-hidden">Loading...</span>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                <button type="button" class="btn btn-primary" id="selectMemberFromModal">Select This Member</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+// Search functionality for books and members
+let books = {{ books|tojson }};
+let members = {{ members|tojson }};
+let selectedMemberId = null;
+
+// Book search functionality
+document.getElementById('bookSearch').addEventListener('input', function(e) {
+    const searchTerm = e.target.value.toLowerCase();
+    const dropdown = document.getElementById('bookDropdown');
+    
+    if (searchTerm.length < 2) {
+        dropdown.classList.add('d-none');
+        return;
+    }
+    
+    const filteredBooks = books.filter(book => 
+        book[1].toLowerCase().includes(searchTerm) || 
+        book[2].toLowerCase().includes(searchTerm) || 
+        book[0].toLowerCase().includes(searchTerm)
+    );
+    
+    if (filteredBooks.length > 0) {
+        dropdown.innerHTML = filteredBooks.slice(0, 10).map(book => 
+            `<div class="search-item" onclick="selectBook('${book[0]}', '${book[1]}', '${book[2]}')"> 
+                <strong>${book[1]}</strong><br>
+                <small class="text-muted">by ${book[2]} (${book[0]})</small>
+            </div>`
+        ).join('');
+        dropdown.classList.remove('d-none');
+    } else {
+        dropdown.innerHTML = '<div class="search-item text-muted">No books found</div>';
+        dropdown.classList.remove('d-none');
+    }
+});
+
+// Member search functionality
+document.getElementById('memberSearch').addEventListener('input', function(e) {
+    const searchTerm = e.target.value.toLowerCase();
+    const dropdown = document.getElementById('memberDropdown');
+    
+    if (searchTerm.length < 2) {
+        dropdown.classList.add('d-none');
+        return;
+    }
+    
+    const filteredMembers = members.filter(member => 
+        member[1].toLowerCase().includes(searchTerm) || 
+        member[0].toString().includes(searchTerm) ||
+        (member[2] && member[2].toLowerCase().includes(searchTerm))
+    );
+    
+    if (filteredMembers.length > 0) {
+        dropdown.innerHTML = filteredMembers.slice(0, 10).map(member => 
+            `<div class="search-item" onclick="selectMember('${member[0]}', '${member[1]}', '${member[2] || ''}')"> 
+                <strong>${member[1]}</strong> (ID: ${member[0]})<br>
+                <small class="text-muted">${member[2] || 'No email'}</small>
+            </div>`
+        ).join('');
+        dropdown.classList.remove('d-none');
+    } else {
+        dropdown.innerHTML = '<div class="search-item text-muted">No members found</div>';
+        dropdown.classList.remove('d-none');
+    }
+});
+
+// Select book function
+function selectBook(isbn, title, author) {
+    document.getElementById('isbn').value = isbn;
+    document.getElementById('bookSearch').value = `${title} by ${author}`;
+    document.getElementById('bookDropdown').classList.add('d-none');
+    
+    // Show book details
+    document.getElementById('selectedBookTitle').textContent = title;
+    document.getElementById('selectedBookAuthor').textContent = author;
+    document.getElementById('selectedBookISBN').textContent = isbn;
+    document.getElementById('bookDetails').classList.remove('d-none');
+    
+    checkFormValidation();
+}
+
+// Select member function
+function selectMember(id, name, email) {
+    document.getElementById('member_id').value = id;
+    document.getElementById('memberSearch').value = `${name} (ID: ${id})`;
+    document.getElementById('memberDropdown').classList.add('d-none');
+    
+    selectedMemberId = id;
+    
+    // Show member details
+    document.getElementById('selectedMemberName').textContent = name;
+    document.getElementById('selectedMemberID').textContent = id;
+    document.getElementById('selectedMemberEmail').textContent = email || 'Not provided';
+    document.getElementById('memberDetails').classList.remove('d-none');
+    
+    // Load member loan details
+    loadMemberLoanDetails(id);
+    
+    checkFormValidation();
+}
+
+// Quick select member from book requests
+function quickSelectMember(memberId, memberName) {
+    const memberSelect = document.getElementById('member_id');
+    const memberSearch = document.getElementById('memberSearch');
+    
+    memberSelect.value = memberId;
+    memberSearch.value = `${memberName} (ID: ${memberId})`;
+    
+    // Find member details from the members array
+    const member = members.find(m => m[0] == memberId);
+    if (member) {
+        selectMember(member[0], member[1], member[2] || '');
+    }
+    
+    // Scroll to the form
+    document.getElementById('loanForm').scrollIntoView({ behavior: 'smooth' });
+    
+    // Show success message
+    const alert = document.createElement('div');
+    alert.className = 'alert alert-success alert-dismissible fade show';
+    alert.innerHTML = `
+        <i class="fas fa-check-circle me-2"></i>
+        Member <strong>${memberName}</strong> has been selected for loan processing.
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    `;
+    
+    const container = document.querySelector('.container-fluid');
+    container.insertBefore(alert, container.firstChild);
+    
+    // Auto-remove the alert after 5 seconds
+    setTimeout(() => {
+        if (alert.parentNode) {
+            alert.remove();
+        }
+    }, 5000);
+}
+
+// Load member loan details via AJAX
+function loadMemberLoanDetails(memberId) {
+    fetch(`/api/member_loan_details/${memberId}`)
+        .then(response => response.json())
+        .then(data => {
+            document.getElementById('memberCurrentLoans').textContent = data.current_loans || '0';
+            document.getElementById('memberOverdueBooks').textContent = data.overdue_books || '0';
+            document.getElementById('memberFines').textContent = data.outstanding_fines ? `$${data.outstanding_fines}` : '$0';
+            
+            // Update badge colors based on data
+            const overdueElement = document.getElementById('memberOverdueBooks');
+            const finesElement = document.getElementById('memberFines');
+            
+            if (data.overdue_books > 0) {
+                overdueElement.className = 'badge bg-danger';
+            } else {
+                overdueElement.className = 'badge bg-success';
+            }
+            
+            if (data.outstanding_fines > 0) {
+                finesElement.className = 'badge bg-danger';
+            } else {
+                finesElement.className = 'badge bg-success';
+            }
+        })
+        .catch(error => {
+            console.error('Error loading member details:', error);
+            // Set default values on error
+            document.getElementById('memberCurrentLoans').textContent = 'Error';
+            document.getElementById('memberOverdueBooks').textContent = 'Error';
+            document.getElementById('memberFines').textContent = 'Error';
+        });
+}
+
+// View member details in modal
+function viewMemberDetails(memberId) {
+    const modal = new bootstrap.Modal(document.getElementById('memberDetailsModal'));
+    selectedMemberId = memberId;
+    
+    fetch(`/api/member_full_details/${memberId}`)
+        .then(response => response.json())
+        .then(data => {
+            document.getElementById('memberModalContent').innerHTML = `
+                <div class="row">
+                    <div class="col-md-6">
+                        <h6 class="text-primary">Personal Information</h6>
+                        <table class="table table-sm">
+                            <tr><td><strong>Name:</strong></td><td>${data.name}</td></tr>
+                            <tr><td><strong>Member ID:</strong></td><td>${data.member_id}</td></tr>
+                            <tr><td><strong>Email:</strong></td><td>${data.email || 'Not provided'}</td></tr>
+                            <tr><td><strong>Phone:</strong></td><td>${data.phone || 'Not provided'}</td></tr>
+                            <tr><td><strong>Address:</strong></td><td>${data.address || 'Not provided'}</td></tr>
+                            <tr><td><strong>Join Date:</strong></td><td>${data.join_date || 'Unknown'}</td></tr>
+                        </table>
+                    </div>
+                    <div class="col-md-6">
+                        <h6 class="text-success">Loan Information</h6>
+                        <table class="table table-sm">
+                            <tr><td><strong>Current Loans:</strong></td><td><span class="badge bg-info">${data.current_loans}</span></td></tr>
+                            <tr><td><strong>Overdue Books:</strong></td><td><span class="badge ${data.overdue_books > 0 ? 'bg-danger' : 'bg-success'}">${data.overdue_books}</span></td></tr>
+                            <tr><td><strong>Total Borrowed:</strong></td><td>${data.total_borrowed || 0}</td></tr>
+                            <tr><td><strong>Outstanding Fines:</strong></td><td><span class="badge ${data.outstanding_fines > 0 ? 'bg-danger' : 'bg-success'}">$${data.outstanding_fines || 0}</span></td></tr>
+                        </table>
+                        
+                        <h6 class="text-warning mt-3">Recent Activity</h6>
+                        <div class="bg-light p-2 rounded">
+                            ${data.recent_loans ? data.recent_loans.map(loan => 
+                                `<small class="d-block">${loan.book_title} - ${loan.loan_date}</small>`
+                            ).join('') : '<small class="text-muted">No recent activity</small>'}
+                        </div>
+                    </div>
+                </div>
+            `;
+        })
+        .catch(error => {
+            document.getElementById('memberModalContent').innerHTML = `
+                <div class="alert alert-danger">
+                    <i class="fas fa-exclamation-circle me-2"></i>
+                    Error loading member details. Please try again.
+                </div>
+            `;
+        });
+    
+    modal.show();
+}
+
+// Select member from modal
+document.getElementById('selectMemberFromModal').addEventListener('click', function() {
+    if (selectedMemberId) {
+        const member = members.find(m => m[0] == selectedMemberId);
+        if (member) {
+            selectMember(member[0], member[1], member[2] || '');
+            bootstrap.Modal.getInstance(document.getElementById('memberDetailsModal')).hide();
+        }
+    }
+});
+
+// Form validation check
+function checkFormValidation() {
+    const isbn = document.getElementById('isbn').value;
+    const memberId = document.getElementById('member_id').value;
+    const submitBtn = document.getElementById('submitBtn');
+    
+    if (isbn && memberId) {
+        submitBtn.disabled = false;
+        submitBtn.classList.remove('btn-outline-primary');
+        submitBtn.classList.add('btn-primary');
+    } else {
+        submitBtn.disabled = true;
+        submitBtn.classList.remove('btn-primary');
+        submitBtn.classList.add('btn-outline-primary');
+    }
+}
+
+// Hide dropdowns when clicking outside
+document.addEventListener('click', function(e) {
+    if (!e.target.closest('#bookSearch') && !e.target.closest('#bookDropdown')) {
+        document.getElementById('bookDropdown').classList.add('d-none');
+    }
+    if (!e.target.closest('#memberSearch') && !e.target.closest('#memberDropdown')) {
+        document.getElementById('memberDropdown').classList.add('d-none');
+    }
+});
+
+// Initialize tooltips
+document.addEventListener('DOMContentLoaded', function () {
+    var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
+    var tooltipList = tooltipTriggerList.map(function (tooltipTriggerEl) {
+        return new bootstrap.Tooltip(tooltipTriggerEl);
+    });
+});
+</script>
+{% endblock %}

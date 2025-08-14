@@ -1,0 +1,523 @@
+{% extends "base.html" %}
+
+{% block title %}Add New Member - Lancaster University Library{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row justify-content-center">
+        <div class="col-lg-8">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <div>
+                    <h2>
+                        <i class="fas fa-user-plus me-3"></i>Add New Member
+                    </h2>
+                    <p class="text-muted">Register a new library member with enhanced information</p>
+                </div>
+                <a href="{{ url_for('members') }}" class="btn btn-outline-secondary">
+                    <i class="fas fa-arrow-left me-2"></i>Back to Members
+                </a>
+            </div>
+
+            <div class="card shadow-sm">
+                <div class="card-header bg-primary text-white">
+                    <h5 class="mb-0"><i class="fas fa-user-plus me-2"></i>Member Registration Form</h5>
+                </div>
+                <div class="card-body">
+                    <form method="POST" action="{{ url_for('enhanced_add_member') }}" enctype="multipart/form-data">
+                        <!-- Personal Information -->
+                        <div class="row mb-4">
+                            <div class="col-12">
+                                <h6 class="text-primary border-bottom pb-2 mb-3">
+                                    <i class="fas fa-user me-2"></i>Personal Information
+                                </h6>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="name" class="form-label">
+                                        <strong>Full Name</strong> <span class="text-danger">*</span>
+                                    </label>
+                                    <input type="text" class="form-control form-control-lg" id="name" name="name" required>
+                                    <div class="form-text">Enter the member's full legal name</div>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="date_of_birth" class="form-label">Date of Birth</label>
+                                    <input type="date" class="form-control" id="date_of_birth" name="date_of_birth">
+                                    <div class="form-text">Optional - helps with age-appropriate recommendations</div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Contact Information -->
+                        <div class="row mb-4">
+                            <div class="col-12">
+                                <h6 class="text-success border-bottom pb-2 mb-3">
+                                    <i class="fas fa-address-book me-2"></i>Contact Information
+                                </h6>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="contact" class="form-label">
+                                        <strong>Primary Contact</strong> <span class="text-danger">*</span>
+                                    </label>
+                                    <input type="text" class="form-control" id="contact" name="contact" required>
+                                    <div class="form-text">Phone number or email address</div>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="email" class="form-label">Email Address</label>
+                                    <input type="email" class="form-control" id="email" name="email">
+                                    <div class="form-text">For notifications and communication</div>
+                                </div>
+                            </div>
+                            <div class="col-12">
+                                <div class="mb-3">
+                                    <label for="address" class="form-label">Address</label>
+                                    <textarea class="form-control" id="address" name="address" rows="3" 
+                                              placeholder="Enter full address including city and postal code..."></textarea>
+                                    <div class="form-text">Complete address for correspondence</div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Membership Information -->
+                        <div class="row mb-4">
+                            <div class="col-12">
+                                <h6 class="text-info border-bottom pb-2 mb-3">
+                                    <i class="fas fa-id-card me-2"></i>Membership Information
+                                </h6>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="tier_id" class="form-label">
+                                        <strong>Membership Tier</strong> <span class="text-danger">*</span>
+                                    </label>
+                                    <select class="form-select" id="tier_id" name="tier_id" required onchange="updateTierInfo()">
+                                        <option value="">Select Membership Tier</option>
+                                        {% for tier in tiers %}
+                                        <option value="{{ tier[0] }}" 
+                                                data-max-books="{{ tier[2] }}" 
+                                                data-loan-period="{{ tier[3] }}" 
+                                                data-fine-rate="{{ tier[4] }}"
+                                                data-description="{{ tier[5] or '' }}">
+                                            {{ tier[1] }} - ${{ "%.2f"|format(tier[4]) }}/day fine
+                                        </option>
+                                        {% endfor %}
+                                    </select>
+                                    <div class="form-text">Choose the appropriate membership level</div>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="student_id" class="form-label">Student/Employee ID</label>
+                                    <input type="text" class="form-control" id="student_id" name="student_id">
+                                    <div class="form-text">University ID number (if applicable)</div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Tier Information Display -->
+                        <div id="tierInfo" class="alert alert-info d-none mb-4">
+                            <h6><i class="fas fa-info-circle me-2"></i>Membership Benefits</h6>
+                            <div class="row">
+                                <div class="col-md-4">
+                                    <strong>Max Books:</strong> <span id="maxBooks">-</span>
+                                </div>
+                                <div class="col-md-4">
+                                    <strong>Loan Period:</strong> <span id="loanPeriod">-</span> days
+                                </div>
+                                <div class="col-md-4">
+                                    <strong>Fine Rate:</strong> $<span id="fineRate">-</span>/day
+                                </div>
+                            </div>
+                            <div class="mt-2">
+                                <small id="tierDescription" class="text-muted"></small>
+                            </div>
+                        </div>
+
+                        <!-- Additional Information -->
+                        <div class="row mb-4">
+                            <div class="col-12">
+                                <h6 class="text-warning border-bottom pb-2 mb-3">
+                                    <i class="fas fa-clipboard me-2"></i>Additional Information
+                                </h6>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="emergency_contact" class="form-label">Emergency Contact</label>
+                                    <input type="text" class="form-control" id="emergency_contact" name="emergency_contact">
+                                    <div class="form-text">Name and phone number</div>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="department" class="form-label">Department/Faculty</label>
+                                    <input type="text" class="form-control" id="department" name="department">
+                                    <div class="form-text">Academic or work department</div>
+                                </div>
+                            </div>
+                            <div class="col-12">
+                                <div class="mb-3">
+                                    <label for="notes" class="form-label">Special Notes</label>
+                                    <textarea class="form-control" id="notes" name="notes" rows="3" 
+                                              placeholder="Any special requirements, accessibility needs, or notes..."></textarea>
+                                    <div class="form-text">Internal notes for library staff</div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Photo Upload -->
+                        <div class="row mb-4">
+                            <div class="col-12">
+                                <h6 class="text-secondary border-bottom pb-2 mb-3">
+                                    <i class="fas fa-camera me-2"></i>Member Photo (Optional)
+                                </h6>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="photo" class="form-label">Upload Photo</label>
+                                    <input type="file" class="form-control" id="photo" name="photo" accept="image/*">
+                                    <div class="form-text">JPG, PNG, or GIF format. Maximum 5MB.</div>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div id="photoPreview" class="border rounded p-3 text-center bg-light">
+                                    <i class="fas fa-user fa-3x text-muted mb-2"></i>
+                                    <p class="mb-0 small text-muted">Photo preview will appear here</p>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Terms and Conditions -->
+                        <div class="mb-4">
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" id="terms" name="terms" required>
+                                <label class="form-check-label" for="terms">
+                                    <strong>I agree to the library terms and conditions</strong> <span class="text-danger">*</span>
+                                </label>
+                                <div class="form-text">
+                                    By checking this box, the member agrees to follow library rules and policies.
+                                    <a href="#" class="text-decoration-none" data-bs-toggle="modal" data-bs-target="#termsModal">
+                                        View Terms & Conditions
+                                    </a>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Form Actions -->
+                        <div class="d-flex justify-content-between">
+                            <div>
+                                <button type="button" class="btn btn-outline-info" onclick="previewMember()">
+                                    <i class="fas fa-eye me-2"></i>Preview
+                                </button>
+                                <button type="button" class="btn btn-outline-warning" onclick="saveDraft()">
+                                    <i class="fas fa-save me-2"></i>Save Draft
+                                </button>
+                            </div>
+                            <div>
+                                <button type="button" class="btn btn-secondary me-2" onclick="resetForm()">
+                                    <i class="fas fa-undo me-2"></i>Reset Form
+                                </button>
+                                <button type="submit" class="btn btn-primary">
+                                    <i class="fas fa-user-plus me-2"></i>Register Member
+                                </button>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Terms and Conditions Modal -->
+<div class="modal fade" id="termsModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">
+                    <i class="fas fa-gavel me-2"></i>Library Terms & Conditions
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div class="terms-content">
+                    <h6>1. Library Membership</h6>
+                    <p>By registering as a library member, you agree to provide accurate and current information.</p>
+                    
+                    <h6>2. Book Borrowing</h6>
+                    <p>Members may borrow books according to their membership tier limits. Books must be returned by the due date.</p>
+                    
+                    <h6>3. Fines and Fees</h6>
+                    <p>Late returns will incur daily fines as specified by your membership tier. Damaged or lost books must be paid for.</p>
+                    
+                    <h6>4. Library Conduct</h6>
+                    <p>Members must maintain appropriate behavior and respect library property and other users.</p>
+                    
+                    <h6>5. Privacy Policy</h6>
+                    <p>Personal information is kept confidential and used only for library services.</p>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Member Preview Modal -->
+<div class="modal fade" id="previewModal" tabindex="-1">
+    <div class="modal-dialog modal-xl">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">
+                    <i class="fas fa-eye me-2"></i>Member Information Preview
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div id="previewContent"></div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                <button type="button" class="btn btn-primary" onclick="submitFromPreview()">
+                    <i class="fas fa-user-plus me-2"></i>Confirm Registration
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+// Update tier information display
+function updateTierInfo() {
+    const select = document.getElementById('tier_id');
+    const selectedOption = select.options[select.selectedIndex];
+    const tierInfo = document.getElementById('tierInfo');
+    
+    if (selectedOption.value) {
+        document.getElementById('maxBooks').textContent = selectedOption.dataset.maxBooks;
+        document.getElementById('loanPeriod').textContent = selectedOption.dataset.loanPeriod;
+        document.getElementById('fineRate').textContent = selectedOption.dataset.fineRate;
+        document.getElementById('tierDescription').textContent = selectedOption.dataset.description;
+        
+        tierInfo.classList.remove('d-none');
+    } else {
+        tierInfo.classList.add('d-none');
+    }
+}
+
+// Photo preview functionality
+document.getElementById('photo').addEventListener('change', function(e) {
+    const file = e.target.files[0];
+    const preview = document.getElementById('photoPreview');
+    
+    if (file) {
+        const reader = new FileReader();
+        reader.onload = function(e) {
+            preview.innerHTML = `
+                <img src="${e.target.result}" class="img-fluid rounded" style="max-height: 150px;">
+                <p class="mb-0 small text-muted mt-2">${file.name}</p>
+            `;
+        };
+        reader.readAsDataURL(file);
+    } else {
+        preview.innerHTML = `
+            <i class="fas fa-user fa-3x text-muted mb-2"></i>
+            <p class="mb-0 small text-muted">Photo preview will appear here</p>
+        `;
+    }
+});
+
+// Preview member information
+function previewMember() {
+    const formData = new FormData(document.querySelector('form'));
+    const data = Object.fromEntries(formData.entries());
+    
+    const tierSelect = document.getElementById('tier_id');
+    const selectedTier = tierSelect.options[tierSelect.selectedIndex];
+    
+    let previewHtml = `
+        <div class="row">
+            <div class="col-md-8">
+                <div class="card">
+                    <div class="card-header bg-primary text-white">
+                        <h6 class="mb-0">Member Information</h6>
+                    </div>
+                    <div class="card-body">
+                        <div class="row">
+                            <div class="col-md-6">
+                                <strong>Name:</strong> ${data.name || 'Not provided'}<br>
+                                <strong>Date of Birth:</strong> ${data.date_of_birth || 'Not provided'}<br>
+                                <strong>Contact:</strong> ${data.contact || 'Not provided'}<br>
+                                <strong>Email:</strong> ${data.email || 'Not provided'}<br>
+                            </div>
+                            <div class="col-md-6">
+                                <strong>Tier:</strong> ${selectedTier.text || 'Not selected'}<br>
+                                <strong>Student ID:</strong> ${data.student_id || 'Not provided'}<br>
+                                <strong>Department:</strong> ${data.department || 'Not provided'}<br>
+                                <strong>Emergency Contact:</strong> ${data.emergency_contact || 'Not provided'}<br>
+                            </div>
+                        </div>
+                        ${data.address ? `<div class="mt-3"><strong>Address:</strong><br>${data.address}</div>` : ''}
+                        ${data.notes ? `<div class="mt-3"><strong>Notes:</strong><br>${data.notes}</div>` : ''}
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="card">
+                    <div class="card-header bg-secondary text-white">
+                        <h6 class="mb-0">Member Photo</h6>
+                    </div>
+                    <div class="card-body text-center">
+                        ${document.getElementById('photoPreview').innerHTML}
+                    </div>
+                </div>
+            </div>
+        </div>
+    `;
+    
+    document.getElementById('previewContent').innerHTML = previewHtml;
+    const modal = new bootstrap.Modal(document.getElementById('previewModal'));
+    modal.show();
+}
+
+function submitFromPreview() {
+    const modal = bootstrap.Modal.getInstance(document.getElementById('previewModal'));
+    modal.hide();
+    document.querySelector('form').submit();
+}
+
+// Save draft functionality
+function saveDraft() {
+    const formData = new FormData(document.querySelector('form'));
+    const data = Object.fromEntries(formData.entries());
+    
+    localStorage.setItem('member_draft', JSON.stringify(data));
+    
+    // Show confirmation
+    const alertDiv = document.createElement('div');
+    alertDiv.className = 'alert alert-success alert-dismissible fade show position-fixed';
+    alertDiv.style.cssText = 'top: 20px; right: 20px; z-index: 9999; min-width: 300px;';
+    alertDiv.innerHTML = `
+        <i class="fas fa-check-circle me-2"></i>
+        <strong>Draft Saved!</strong> Your member information has been saved locally.
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    `;
+    document.body.appendChild(alertDiv);
+    
+    setTimeout(() => {
+        if (alertDiv.parentNode) {
+            alertDiv.parentNode.removeChild(alertDiv);
+        }
+    }, 3000);
+}
+
+function resetForm() {
+    if (confirm('Are you sure you want to reset the form? All entered data will be lost.')) {
+        document.querySelector('form').reset();
+        document.getElementById('tierInfo').classList.add('d-none');
+        document.getElementById('photoPreview').innerHTML = `
+            <i class="fas fa-user fa-3x text-muted mb-2"></i>
+            <p class="mb-0 small text-muted">Photo preview will appear here</p>
+        `;
+    }
+}
+
+// Load draft on page load
+document.addEventListener('DOMContentLoaded', function() {
+    const savedDraft = localStorage.getItem('member_draft');
+    if (savedDraft) {
+        try {
+            const draftData = JSON.parse(savedDraft);
+            if (confirm('A saved draft was found. Would you like to restore it?')) {
+                Object.keys(draftData).forEach(key => {
+                    const element = document.querySelector(`[name="${key}"]`);
+                    if (element) {
+                        if (element.type === 'checkbox') {
+                            element.checked = draftData[key] === 'on';
+                        } else {
+                            element.value = draftData[key];
+                        }
+                    }
+                });
+                updateTierInfo();
+            }
+        } catch (e) {
+            console.error('Error loading draft:', e);
+        }
+    }
+});
+
+// Clear draft after successful submission
+document.querySelector('form').addEventListener('submit', function() {
+    localStorage.removeItem('member_draft');
+});
+
+// Auto-save draft every 30 seconds
+setInterval(function() {
+    const formData = new FormData(document.querySelector('form'));
+    const data = Object.fromEntries(formData.entries());
+    if (Object.values(data).some(value => value && value.trim())) {
+        localStorage.setItem('member_draft', JSON.stringify(data));
+    }
+}, 30000);
+</script>
+
+<style>
+.form-control:focus, .form-select:focus {
+    border-color: #0d6efd;
+    box-shadow: 0 0 0 0.2rem rgba(13, 110, 253, 0.25);
+}
+
+.card {
+    border: none;
+    border-radius: 8px;
+}
+
+.form-control-lg {
+    font-size: 1.1rem;
+    padding: 0.75rem 1rem;
+}
+
+.form-text {
+    font-size: 0.875em;
+    color: #6c757d;
+}
+
+.border-bottom {
+    border-bottom: 2px solid currentColor !important;
+}
+
+#photoPreview {
+    min-height: 150px;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+}
+
+.terms-content h6 {
+    color: #0d6efd;
+    margin-top: 1rem;
+    margin-bottom: 0.5rem;
+}
+
+.terms-content p {
+    margin-bottom: 1rem;
+    line-height: 1.5;
+}
+
+.alert {
+    border: none;
+    border-radius: 8px;
+}
+
+.modal-body {
+    max-height: 70vh;
+    overflow-y: auto;
+}
+</style>
+{% endblock %}

@@ -1,0 +1,33 @@
+<svg width="192" height="192" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="bg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#ea6666;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#a24b4b;stop-opacity:1" />
+    </linearGradient>
+  </defs>
+  
+  <!-- Background -->
+  <rect width="192" height="192" fill="url(#bg)" rx="24"/>
+  
+  <!-- Book -->
+  <rect x="48" y="60" width="96" height="72" fill="#ffffff" stroke="#a24b4b" stroke-width="2" rx="4"/>
+  
+  <!-- Book spine -->
+  <rect x="48" y="60" width="12" height="72" fill="#a24b4b" rx="2"/>
+  
+  <!-- Pages -->
+  <rect x="65" y="68" width="72" height="56" fill="#f8f9fa" rx="2"/>
+  
+  <!-- Text lines -->
+  <rect x="72" y="80" width="48" height="3" fill="#6c757d" rx="1"/>
+  <rect x="72" y="90" width="56" height="3" fill="#6c757d" rx="1"/>
+  <rect x="72" y="100" width="40" height="3" fill="#6c757d" rx="1"/>
+  <rect x="72" y="110" width="52" height="3" fill="#6c757d" rx="1"/>
+  
+  <!-- University emblem (simplified) -->
+  <circle cx="96" cy="36" r="12" fill="#ffffff" stroke="#a24b4b" stroke-width="2"/>
+  <text x="96" y="42" text-anchor="middle" font-family="serif" font-size="14" font-weight="bold" fill="#a24b4b">L</text>
+  
+  <!-- Library text -->
+  <text x="96" y="156" text-anchor="middle" font-family="Arial, sans-serif" font-size="12" font-weight="bold" fill="#ffffff">LIBRARY</text>
+</svg>

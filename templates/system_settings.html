@@ -1,0 +1,480 @@
+{% extends "base.html" %}
+
+{% block title %}System Settings - Lancaster University Library{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <div>
+                    <h2>
+                        <i class="fas fa-cog me-3"></i>System Settings
+                    </h2>
+                    <p class="text-muted">Configure library system parameters and preferences</p>
+                </div>
+                <a href="{{ url_for('librarian_dashboard') }}" class="btn btn-outline-secondary">
+                    <i class="fas fa-arrow-left me-2"></i>Back to Dashboard
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-lg-8">
+            <div class="card shadow-sm">
+                <div class="card-header bg-primary text-white">
+                    <h5 class="mb-0"><i class="fas fa-sliders-h me-2"></i>Library Configuration</h5>
+                </div>
+                <div class="card-body">
+                    {% if settings %}
+                    <div class="table-responsive">
+                        <table class="table table-hover">
+                            <thead class="table-light">
+                                <tr>
+                                    <th>Setting</th>
+                                    <th>Current Value</th>
+                                    <th>Description</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for setting in settings %}
+                                <tr id="setting-{{ setting[0] }}">
+                                    <td>
+                                        <strong>{{ setting[1]|replace('_', ' ')|title }}</strong>
+                                    </td>
+                                    <td>
+                                        <span class="badge bg-info">{{ setting[2] }}</span>
+                                    </td>
+                                    <td class="text-muted">{{ setting[3] or 'No description' }}</td>
+                                    <td>
+                                        <button class="btn btn-sm btn-outline-primary" 
+                                                onclick="editSetting('{{ setting[1] }}', '{{ setting[2] }}', '{{ setting[3] }}')">
+                                            <i class="fas fa-edit"></i> Edit
+                                        </button>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                    {% else %}
+                    <div class="text-center py-4">
+                        <i class="fas fa-exclamation-triangle fa-3x text-warning mb-3"></i>
+                        <h4>No Settings Found</h4>
+                        <p class="text-muted">No system settings are currently configured.</p>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
+        <div class="col-lg-4">
+            <!-- UI Preferences Card -->
+            <div class="card shadow-sm mb-4">
+                <div class="card-header bg-secondary text-white">
+                    <h5 class="mb-0"><i class="fas fa-palette me-2"></i>UI Preferences</h5>
+                </div>
+                <div class="card-body">
+                    <div class="mb-3">
+                        <label for="themeSelector" class="form-label">
+                            <strong><i class="fas fa-moon me-2"></i>Theme</strong>
+                        </label>
+                        <select class="form-select" id="themeSelector" onchange="changeTheme()">
+                            <option value="light">Light Mode</option>
+                            <option value="dark">Dark Mode</option>
+                            <option value="auto">System Default</option>
+                        </select>
+                        <div class="form-text">Choose your preferred color scheme for the library system</div>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label class="form-label">
+                            <strong><i class="fas fa-eye me-2"></i>Display Options</strong>
+                        </label>
+                        <div class="form-check">
+                            <input class="form-check-input" type="checkbox" id="compactMode">
+                            <label class="form-check-label" for="compactMode">
+                                Compact view mode
+                            </label>
+                        </div>
+                        <div class="form-check">
+                            <input class="form-check-input" type="checkbox" id="animationsEnabled" checked>
+                            <label class="form-check-label" for="animationsEnabled">
+                                Enable animations
+                            </label>
+                        </div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="fontSizeSelector" class="form-label">
+                            <strong><i class="fas fa-text-height me-2"></i>Font Size</strong>
+                        </label>
+                        <select class="form-select" id="fontSizeSelector" onchange="changeFontSize()">
+                            <option value="small">Small</option>
+                            <option value="normal" selected>Normal</option>
+                            <option value="large">Large</option>
+                        </select>
+                    </div>
+
+                    <hr>
+                    <div class="d-grid">
+                        <button class="btn btn-outline-primary" onclick="resetUISettings()">
+                            <i class="fas fa-undo me-2"></i>Reset to Defaults
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <div class="card shadow-sm">
+                <div class="card-header bg-info text-white">
+                    <h5 class="mb-0"><i class="fas fa-info-circle me-2"></i>System Information</h5>
+                </div>
+                <div class="card-body">
+                    <div class="mb-3">
+                        <strong>Library Name:</strong><br>
+                        <span class="text-muted">Lancaster University Library</span>
+                    </div>
+                    <div class="mb-3">
+                        <strong>System Version:</strong><br>
+                        <span class="badge bg-success">v1.0.0</span>
+                    </div>
+                    <div class="mb-3">
+                        <strong>Database Status:</strong><br>
+                        <span class="badge bg-success">
+                            <i class="fas fa-check-circle"></i> Connected
+                        </span>
+                    </div>
+                    <div class="mb-3">
+                        <strong>Last Backup:</strong><br>
+                        <span class="text-muted">Not configured</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="card shadow-sm mt-4">
+                <div class="card-header bg-warning text-white">
+                    <h5 class="mb-0"><i class="fas fa-tools me-2"></i>Quick Actions</h5>
+                </div>
+                <div class="card-body">
+                    <div class="d-grid gap-2">
+                        <button class="btn btn-outline-primary" onclick="calculateFines()">
+                            <i class="fas fa-calculator me-2"></i>Calculate Overdue Fines
+                        </button>
+                        <button class="btn btn-outline-success" onclick="backupDatabase()">
+                            <i class="fas fa-save me-2"></i>Backup Database
+                        </button>
+                        <button class="btn btn-outline-info" onclick="cleanupLogs()">
+                            <i class="fas fa-broom me-2"></i>Cleanup Old Logs
+                        </button>
+                        <a href="{{ url_for('audit_logs') }}" class="btn btn-outline-secondary">
+                            <i class="fas fa-history me-2"></i>View Audit Trail
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Edit Setting Modal -->
+<div class="modal fade" id="editSettingModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">
+                    <i class="fas fa-edit me-2"></i>Edit Setting
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <form method="POST" action="{{ url_for('update_setting') }}">
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label for="settingKey" class="form-label">Setting Key</label>
+                        <input type="text" class="form-control" id="settingKey" name="key" readonly>
+                    </div>
+                    <div class="mb-3">
+                        <label for="settingValue" class="form-label">Value</label>
+                        <input type="text" class="form-control" id="settingValue" name="value" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="settingDescription" class="form-label">Description</label>
+                        <input type="text" class="form-control" id="settingDescription" readonly>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-primary">
+                        <i class="fas fa-save me-2"></i>Update Setting
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<script>
+function editSetting(key, value, description) {
+    document.getElementById('settingKey').value = key;
+    document.getElementById('settingValue').value = value;
+    document.getElementById('settingDescription').value = description;
+    
+    const modal = new bootstrap.Modal(document.getElementById('editSettingModal'));
+    modal.show();
+}
+
+function calculateFines() {
+    if (confirm('This will calculate overdue fines for all active loans. Continue?')) {
+        fetch('/api/calculate_fines', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            }
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                alert(`Successfully calculated ${data.fines_created} new fines.`);
+            } else {
+                alert('Error calculating fines: ' + data.error);
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            alert('An error occurred while calculating fines.');
+        });
+    }
+}
+
+function backupDatabase() {
+    if (confirm('Create a backup of the current database?')) {
+        alert('Database backup feature is not yet implemented.');
+    }
+}
+
+function cleanupLogs() {
+    if (confirm('Remove audit logs older than 90 days?')) {
+        alert('Log cleanup feature is not yet implemented.');
+    }
+}
+
+// Theme Management Functions
+function changeTheme() {
+    const theme = document.getElementById('themeSelector').value;
+    
+    // Update the theme icon based on selection
+    const themeIcon = document.querySelector('#themeSelector').parentElement.querySelector('i');
+    
+    switch(theme) {
+        case 'dark':
+            themeIcon.className = 'fas fa-moon me-2';
+            document.documentElement.setAttribute('data-bs-theme', 'dark');
+            break;
+        case 'light':
+            themeIcon.className = 'fas fa-sun me-2';
+            document.documentElement.setAttribute('data-bs-theme', 'light');
+            break;
+        case 'auto':
+            themeIcon.className = 'fas fa-adjust me-2';
+            // Use system preference
+            if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) {
+                document.documentElement.setAttribute('data-bs-theme', 'dark');
+            } else {
+                document.documentElement.setAttribute('data-bs-theme', 'light');
+            }
+            break;
+    }
+    
+    // Save theme preference
+    localStorage.setItem('library-theme', theme);
+    
+    // Show confirmation
+    showNotification('Theme updated successfully!', 'success');
+}
+
+function changeFontSize() {
+    const fontSize = document.getElementById('fontSizeSelector').value;
+    
+    // Remove existing font size classes
+    document.body.classList.remove('font-size-small', 'font-size-large');
+    
+    // Apply new font size
+    if (fontSize === 'small') {
+        document.body.classList.add('font-size-small');
+    } else if (fontSize === 'large') {
+        document.body.classList.add('font-size-large');
+    }
+    
+    // Save font size preference
+    localStorage.setItem('library-font-size', fontSize);
+    
+    showNotification('Font size updated!', 'success');
+}
+
+function resetUISettings() {
+    if (confirm('Reset all UI preferences to default values?')) {
+        // Reset theme to light
+        document.getElementById('themeSelector').value = 'light';
+        document.documentElement.setAttribute('data-bs-theme', 'light');
+        
+        // Reset font size to normal
+        document.getElementById('fontSizeSelector').value = 'normal';
+        document.body.classList.remove('font-size-small', 'font-size-large');
+        
+        // Reset checkboxes
+        document.getElementById('compactMode').checked = false;
+        document.getElementById('animationsEnabled').checked = true;
+        
+        // Clear localStorage preferences
+        localStorage.removeItem('library-theme');
+        localStorage.removeItem('library-font-size');
+        localStorage.removeItem('library-compact-mode');
+        localStorage.removeItem('library-animations');
+        
+        showNotification('UI settings reset to defaults!', 'info');
+    }
+}
+
+function showNotification(message, type = 'info') {
+    const alertClass = type === 'success' ? 'alert-success' : 
+                      type === 'error' ? 'alert-danger' : 'alert-info';
+    
+    const alertDiv = document.createElement('div');
+    alertDiv.className = `alert ${alertClass} alert-dismissible fade show position-fixed`;
+    alertDiv.style.cssText = 'top: 20px; right: 20px; z-index: 9999; min-width: 300px;';
+    alertDiv.innerHTML = `
+        <i class="fas fa-${type === 'success' ? 'check-circle' : type === 'error' ? 'exclamation-triangle' : 'info-circle'} me-2"></i>
+        ${message}
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    `;
+    
+    document.body.appendChild(alertDiv);
+    
+    setTimeout(() => {
+        if (alertDiv.parentNode) {
+            alertDiv.parentNode.removeChild(alertDiv);
+        }
+    }, 4000);
+}
+
+// Load saved preferences on page load
+document.addEventListener('DOMContentLoaded', function() {
+    // Load theme preference
+    const savedTheme = localStorage.getItem('library-theme') || 'light';
+    document.getElementById('themeSelector').value = savedTheme;
+    changeTheme();
+    
+    // Load font size preference
+    const savedFontSize = localStorage.getItem('library-font-size') || 'normal';
+    document.getElementById('fontSizeSelector').value = savedFontSize;
+    changeFontSize();
+    
+    // Load display options
+    const compactMode = localStorage.getItem('library-compact-mode') === 'true';
+    const animationsEnabled = localStorage.getItem('library-animations') !== 'false';
+    
+    document.getElementById('compactMode').checked = compactMode;
+    document.getElementById('animationsEnabled').checked = animationsEnabled;
+    
+    // Apply compact mode if enabled
+    if (compactMode) {
+        document.body.classList.add('compact-mode');
+    }
+    
+    // Handle compact mode toggle
+    document.getElementById('compactMode').addEventListener('change', function() {
+        if (this.checked) {
+            document.body.classList.add('compact-mode');
+            localStorage.setItem('library-compact-mode', 'true');
+        } else {
+            document.body.classList.remove('compact-mode');
+            localStorage.setItem('library-compact-mode', 'false');
+        }
+        showNotification('Compact mode ' + (this.checked ? 'enabled' : 'disabled'), 'success');
+    });
+    
+    // Handle animations toggle
+    document.getElementById('animationsEnabled').addEventListener('change', function() {
+        if (this.checked) {
+            document.body.classList.remove('no-animations');
+            localStorage.setItem('library-animations', 'true');
+        } else {
+            document.body.classList.add('no-animations');
+            localStorage.setItem('library-animations', 'false');
+        }
+        showNotification('Animations ' + (this.checked ? 'enabled' : 'disabled'), 'success');
+    });
+});
+</script>
+
+<style>
+.table th {
+    border-top: none;
+}
+.badge {
+    font-size: 0.85em;
+}
+.card {
+    border: none;
+    border-radius: 8px;
+}
+.table-hover tbody tr:hover {
+    background-color: rgba(0, 123, 255, 0.1);
+}
+
+/* Font Size Classes */
+.font-size-small {
+    font-size: 0.875rem;
+}
+.font-size-small h1 { font-size: 1.75rem; }
+.font-size-small h2 { font-size: 1.5rem; }
+.font-size-small h3 { font-size: 1.25rem; }
+.font-size-small h4 { font-size: 1.1rem; }
+.font-size-small h5 { font-size: 1rem; }
+.font-size-small h6 { font-size: 0.875rem; }
+
+.font-size-large {
+    font-size: 1.125rem;
+}
+.font-size-large h1 { font-size: 2.5rem; }
+.font-size-large h2 { font-size: 2.25rem; }
+.font-size-large h3 { font-size: 2rem; }
+.font-size-large h4 { font-size: 1.75rem; }
+.font-size-large h5 { font-size: 1.5rem; }
+.font-size-large h6 { font-size: 1.25rem; }
+
+/* Compact Mode */
+.compact-mode .card {
+    margin-bottom: 1rem !important;
+}
+.compact-mode .card-body {
+    padding: 1rem !important;
+}
+.compact-mode .btn {
+    padding: 0.375rem 0.75rem;
+    font-size: 0.875rem;
+}
+.compact-mode .table {
+    font-size: 0.875rem;
+}
+.compact-mode h1, .compact-mode h2 {
+    font-size: 1.5rem;
+    margin-bottom: 0.75rem;
+}
+.compact-mode h3, .compact-mode h4, .compact-mode h5 {
+    font-size: 1.25rem;
+    margin-bottom: 0.5rem;
+}
+
+/* No Animations */
+.no-animations *, 
+.no-animations *::before, 
+.no-animations *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+}
+</style>
+{% endblock %}

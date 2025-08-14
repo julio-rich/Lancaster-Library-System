@@ -1,0 +1,342 @@
+{% extends "base.html" %}
+
+{% block title %}Book Reservations - Lancaster University Library{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <div>
+                    <h2>
+                        <i class="fas fa-calendar-check me-3"></i>Book Reservations
+                    </h2>
+                    <p class="text-muted">Manage and monitor book reservations from library members</p>
+                </div>
+                <div>
+                    <button class="btn btn-primary me-2" data-bs-toggle="modal" data-bs-target="#createReservationModal">
+                        <i class="fas fa-plus-circle me-2"></i>New Reservation
+                    </button>
+                    <a href="{{ url_for('librarian_dashboard') }}" class="btn btn-outline-secondary">
+                        <i class="fas fa-arrow-left me-2"></i>Back to Dashboard
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Reservation Statistics -->
+    <div class="row g-4 mb-4">
+        <div class="col-md-3">
+            <div class="card bg-info text-white">
+                <div class="card-body text-center">
+                    <i class="fas fa-calendar-alt fa-2x mb-2"></i>
+                    <h4>{{ reservations|length }}</h4>
+                    <p class="mb-0">Active Reservations</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card bg-success text-white">
+                <div class="card-body text-center">
+                    <i class="fas fa-clock fa-2x mb-2"></i>
+                    <h4>{{ reservations|selectattr(5, "datetime", "%Y-%m-%d")|list|length }}</h4>
+                    <p class="mb-0">Expiring Soon</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card bg-warning text-white">
+                <div class="card-body text-center">
+                    <i class="fas fa-hourglass-half fa-2x mb-2"></i>
+                    <h4>0</h4>
+                    <p class="mb-0">Expired Today</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card bg-primary text-white">
+                <div class="card-body text-center">
+                    <i class="fas fa-handshake fa-2x mb-2"></i>
+                    <h4>0</h4>
+                    <p class="mb-0">Fulfilled Today</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Reservations Table -->
+    <div class="card shadow-sm">
+        <div class="card-header bg-light">
+            <div class="row align-items-center">
+                <div class="col">
+                    <h5 class="mb-0"><i class="fas fa-list me-2"></i>Current Reservations</h5>
+                </div>
+                <div class="col-auto">
+                    <div class="input-group input-group-sm">
+                        <input type="text" class="form-control" id="reservationSearch" placeholder="Search reservations...">
+                        <button class="btn btn-outline-secondary" type="button">
+                            <i class="fas fa-search"></i>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="card-body p-0">
+            {% if reservations %}
+            <div class="table-responsive">
+                <table class="table table-hover mb-0" id="reservationsTable">
+                    <thead class="table-light">
+                        <tr>
+                            <th>Reservation ID</th>
+                            <th>Book</th>
+                            <th>Member</th>
+                            <th>Reserved Date</th>
+                            <th>Expires</th>
+                            <th>Status</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for reservation in reservations %}
+                        <tr>
+                            <td><code class="small">{{ reservation[0] }}</code></td>
+                            <td>
+                                <div>
+                                    <strong>{{ reservation[1] }}</strong>
+                                    <br><small class="text-muted">by {{ reservation[2] }}</small>
+                                </div>
+                            </td>
+                            <td>
+                                <span class="badge bg-primary">{{ reservation[3] }}</span>
+                            </td>
+                            <td>
+                                <small class="text-muted">{{ reservation[4] }}</small>
+                            </td>
+                            <td>
+                                {% set expiry_date = reservation[5] %}
+                                {% if expiry_date %}
+                                <span class="badge {% if expiry_date <= today %}bg-danger{% elif (expiry_date|date_diff) <= 1 %}bg-warning{% else %}bg-success{% endif %}">
+                                    {{ expiry_date }}
+                                </span>
+                                {% else %}
+                                <span class="badge bg-secondary">No expiry</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                <span class="badge bg-info">Active</span>
+                            </td>
+                            <td>
+                                <div class="btn-group btn-group-sm">
+                                    <button class="btn btn-outline-success" 
+                                            onclick="fulfillReservation({{ reservation[0] }}, '{{ reservation[1] }}', '{{ reservation[3] }}')"
+                                            data-bs-toggle="tooltip" title="Fulfill Reservation">
+                                        <i class="fas fa-check"></i>
+                                    </button>
+                                    <button class="btn btn-outline-warning" 
+                                            onclick="extendReservation({{ reservation[0] }})"
+                                            data-bs-toggle="tooltip" title="Extend Reservation">
+                                        <i class="fas fa-clock"></i>
+                                    </button>
+                                    <button class="btn btn-outline-danger" 
+                                            onclick="cancelReservation({{ reservation[0] }}, '{{ reservation[1] }}')"
+                                            data-bs-toggle="tooltip" title="Cancel Reservation">
+                                        <i class="fas fa-times"></i>
+                                    </button>
+                                </div>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            {% else %}
+            <div class="text-center py-5">
+                <i class="fas fa-calendar-alt fa-4x text-muted mb-4"></i>
+                <h4>No Active Reservations</h4>
+                <p class="text-muted mb-4">There are currently no book reservations in the system.</p>
+                <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#createReservationModal">
+                    <i class="fas fa-plus-circle me-2"></i>Create First Reservation
+                </button>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<!-- Create Reservation Modal -->
+<div class="modal fade" id="createReservationModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">
+                    <i class="fas fa-plus-circle me-2"></i>Create New Reservation
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <form method="POST" action="{{ url_for('create_reservation') }}">
+                <div class="modal-body">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="isbn" class="form-label">Book ISBN <span class="text-danger">*</span></label>
+                                <input type="text" class="form-control" id="isbn" name="isbn" required>
+                                <div class="form-text">Enter the ISBN of the book to reserve</div>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="member_id" class="form-label">Member ID <span class="text-danger">*</span></label>
+                                <input type="number" class="form-control" id="member_id" name="member_id" required>
+                                <div class="form-text">Enter the member ID who wants to reserve</div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="mb-3">
+                        <label for="hold_days" class="form-label">Hold Duration (Days)</label>
+                        <select class="form-select" id="hold_days" name="hold_days">
+                            <option value="3">3 days (Standard)</option>
+                            <option value="5">5 days</option>
+                            <option value="7">1 week</option>
+                            <option value="14">2 weeks</option>
+                        </select>
+                        <div class="form-text">How long should this reservation be held?</div>
+                    </div>
+                    <div class="mb-3">
+                        <label for="notes" class="form-label">Notes (Optional)</label>
+                        <textarea class="form-control" id="notes" name="notes" rows="3" 
+                                  placeholder="Any special notes about this reservation..."></textarea>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-primary">
+                        <i class="fas fa-calendar-plus me-2"></i>Create Reservation
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<script>
+// Search functionality
+document.getElementById('reservationSearch').addEventListener('input', function(e) {
+    const searchTerm = e.target.value.toLowerCase();
+    const tableRows = document.querySelectorAll('#reservationsTable tbody tr');
+    
+    tableRows.forEach(row => {
+        const text = row.textContent.toLowerCase();
+        if (text.includes(searchTerm)) {
+            row.style.display = '';
+        } else {
+            row.style.display = 'none';
+        }
+    });
+});
+
+function fulfillReservation(reservationId, bookTitle, memberName) {
+    if (confirm(`Fulfill reservation for "${bookTitle}" by ${memberName}?`)) {
+        // This would typically redirect to loan processing
+        window.location.href = `/loan_book?reservation_id=${reservationId}`;
+    }
+}
+
+function extendReservation(reservationId) {
+    const days = prompt('Extend reservation by how many days?', '3');
+    if (days && !isNaN(days)) {
+        fetch(`/extend_reservation/${reservationId}`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ days: parseInt(days) })
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                location.reload();
+            } else {
+                alert('Error extending reservation: ' + data.error);
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            alert('An error occurred while extending the reservation.');
+        });
+    }
+}
+
+function cancelReservation(reservationId, bookTitle) {
+    if (confirm(`Cancel reservation for "${bookTitle}"?`)) {
+        fetch(`/cancel_reservation/${reservationId}`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            }
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                location.reload();
+            } else {
+                alert('Error cancelling reservation: ' + data.error);
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            alert('An error occurred while cancelling the reservation.');
+        });
+    }
+}
+
+// Initialize tooltips
+document.addEventListener('DOMContentLoaded', function() {
+    var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
+    var tooltipList = tooltipTriggerList.map(function (tooltipTriggerEl) {
+        return new bootstrap.Tooltip(tooltipTriggerEl);
+    });
+});
+
+// Auto-refresh every 2 minutes
+setInterval(() => {
+    location.reload();
+}, 120000);
+</script>
+
+<style>
+.table th {
+    border-top: none;
+    font-weight: 600;
+}
+
+.table tbody tr:hover {
+    background-color: rgba(0, 123, 255, 0.1);
+}
+
+.badge {
+    font-size: 0.875em;
+}
+
+.card {
+    border: none;
+    border-radius: 8px;
+}
+
+.btn-group-sm .btn {
+    padding: 0.25rem 0.5rem;
+}
+
+code {
+    background-color: #f8f9fa;
+    padding: 2px 4px;
+    border-radius: 3px;
+    font-size: 0.875em;
+}
+
+.form-text {
+    font-size: 0.875em;
+    color: #6c757d;
+}
+</style>
+{% endblock %}

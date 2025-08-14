@@ -1,0 +1,390 @@
+{% extends "base.html" %}
+
+{% block title %}Messages{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="row">
+        <div class="col-md-12">
+            <h2 class="mb-4">
+                <i class="fas fa-envelope"></i> Messages
+                {% if messages %}
+                    <span class="badge bg-primary">{{ messages|length }}</span>
+                {% endif %}
+            </h2>
+        </div>
+    </div>
+
+    <!-- Action Buttons -->
+    <div class="row mb-4">
+        <div class="col-md-12">
+            <div class="d-flex justify-content-between">
+                <div>
+                    <a href="{{ url_for('send_message') }}" class="btn btn-primary">
+                        <i class="fas fa-plus"></i> New Message
+                    </a>
+                    <button class="btn btn-outline-primary" onclick="markAllRead()">
+                        <i class="fas fa-check"></i> Mark All Read
+                    </button>
+                    <button class="btn btn-outline-danger" onclick="deleteSelected()">
+                        <i class="fas fa-trash"></i> Delete Selected
+                    </button>
+                </div>
+                <div>
+                    <div class="btn-group" role="group">
+                        <button type="button" class="btn btn-outline-secondary" onclick="filterMessages('all')">
+                            All
+                        </button>
+                        <button type="button" class="btn btn-outline-primary" onclick="filterMessages('unread')">
+                            Unread
+                        </button>
+                        <button type="button" class="btn btn-outline-success" onclick="filterMessages('read')">
+                            Read
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Messages List -->
+    {% if messages %}
+    <div class="row">
+        <div class="col-md-12">
+            <div class="card">
+                <div class="card-header bg-primary text-white">
+                    <h5 class="mb-0">
+                        <i class="fas fa-list"></i> Your Messages
+                    </h5>
+                </div>
+                <div class="card-body p-0">
+                    <div class="table-responsive">
+                        <table class="table table-hover mb-0">
+                            <thead class="table-light">
+                                <tr>
+                                    <th width="40">
+                                        <input type="checkbox" id="selectAll" onchange="toggleSelectAll(this)">
+                                    </th>
+                                    <th width="60">Status</th>
+                                    <th width="150">From</th>
+                                    <th>Subject</th>
+                                    <th width="100">Priority</th>
+                                    <th width="120">Date</th>
+                                    <th width="100">Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for message in messages %}
+                                <tr class="message-row {% if not message[8] %}table-primary{% endif %}" 
+                                    data-message-id="{{ message[0] }}" 
+                                    data-read="{{ message[8] }}"
+                                    data-priority="{{ message[9] or 'normal' }}">
+                                    <td>
+                                        <input type="checkbox" class="message-checkbox" value="{{ message[0] }}">
+                                    </td>
+                                    <td>
+                                        {% if message[8] %}
+                                            <i class="fas fa-envelope-open text-muted" title="Read"></i>
+                                        {% else %}
+                                            <i class="fas fa-envelope text-primary" title="Unread"></i>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        <strong>
+                                            {% if message[10] %}
+                                                {{ message[10] }}
+                                            {% else %}
+                                                System
+                                            {% endif %}
+                                        </strong>
+                                    </td>
+                                    <td>
+                                        <div class="d-flex justify-content-between align-items-center">
+                                            <div>
+                                                <strong class="{% if not message[8] %}text-primary{% endif %}">
+                                                    {{ message[4] or 'No Subject' }}
+                                                </strong>
+                                                <br>
+                                                <small class="text-muted">
+                                                    {{ (message[5][:80] + '...') if message[5]|length > 80 else message[5] }}
+                                                </small>
+                                            </div>
+                                            {% if (message[9] or 'normal') == 'high' %}
+                                                <span class="badge bg-danger">High Priority</span>
+                                            {% elif (message[9] or 'normal') == 'urgent' %}
+                                                <span class="badge bg-warning">Urgent</span>
+                                            {% endif %}
+                                        </div>
+                                    </td>
+                                    <td>
+                                        {% if (message[9] or 'normal') == 'high' %}
+                                            <span class="badge bg-danger">High</span>
+                                        {% elif (message[9] or 'normal') == 'urgent' %}
+                                            <span class="badge bg-warning">Urgent</span>
+                                        {% elif (message[9] or 'normal') == 'low' %}
+                                            <span class="badge bg-secondary">Low</span>
+                                        {% else %}
+                                            <span class="badge bg-primary">Normal</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        <small class="text-muted">
+                                            {{ message[6][:16] if message[6] else 'Unknown' }}
+                                        </small>
+                                    </td>
+                                    <td>
+                                        <div class="btn-group" role="group">
+                                            <button class="btn btn-sm btn-outline-primary" 
+                                                    onclick="viewMessage({{ message[0] }}, '{{ message[4] or 'No Subject' }}', '{{ message[5] }}', '{{ message[10] or 'System' }}', '{{ message[6] }}', {{ message[8]|tojson }})">
+                                                <i class="fas fa-eye"></i>
+                                            </button>
+                                            {% if not message[8] %}
+                                            <a href="{{ url_for('mark_message_read', message_id=message[0]) }}" 
+                                               class="btn btn-sm btn-outline-success">
+                                                <i class="fas fa-check"></i>
+                                            </a>
+                                            {% endif %}
+                                            <button class="btn btn-sm btn-outline-danger" 
+                                                    onclick="deleteMessage({{ message[0] }})">
+                                                <i class="fas fa-trash"></i>
+                                            </button>
+                                        </div>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% else %}
+    <!-- No Messages -->
+    <div class="row">
+        <div class="col-md-12">
+            <div class="card">
+                <div class="card-body text-center py-5">
+                    <i class="fas fa-envelope fa-3x text-muted mb-3"></i>
+                    <h5 class="text-muted">No messages found</h5>
+                    <p class="text-muted">You haven't received any messages yet.</p>
+                    <a href="{{ url_for('send_message') }}" class="btn btn-primary">
+                        <i class="fas fa-plus"></i> Send Your First Message
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- Message Statistics -->
+    <div class="row mt-4">
+        <div class="col-md-3">
+            <div class="card bg-primary text-white">
+                <div class="card-body text-center">
+                    <i class="fas fa-envelope fa-2x mb-2"></i>
+                    <h4 id="totalMessages">{{ messages|length if messages else 0 }}</h4>
+                    <p class="mb-0">Total Messages</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card bg-warning text-white">
+                <div class="card-body text-center">
+                    <i class="fas fa-envelope fa-2x mb-2"></i>
+                    <h4 id="unreadMessages">
+                        {% if messages %}
+                            {{ messages|selectattr(8, 'eq', 0)|list|length }}
+                        {% else %}
+                            0
+                        {% endif %}
+                    </h4>
+                    <p class="mb-0">Unread</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card bg-success text-white">
+                <div class="card-body text-center">
+                    <i class="fas fa-check fa-2x mb-2"></i>
+                    <h4 id="readMessages">
+                        {% if messages %}
+                            {{ messages|selectattr(8, 'eq', 1)|list|length }}
+                        {% else %}
+                            0
+                        {% endif %}
+                    </h4>
+                    <p class="mb-0">Read</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card bg-danger text-white">
+                <div class="card-body text-center">
+                    <i class="fas fa-exclamation fa-2x mb-2"></i>
+                    <h4 id="urgentMessages">
+                        {% if messages %}
+                            {{ messages|selectattr(9, 'eq', 'urgent')|list|length + messages|selectattr(9, 'eq', 'high')|list|length }}
+                        {% else %}
+                            0
+                        {% endif %}
+                    </h4>
+                    <p class="mb-0">Urgent/High</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Message View Modal -->
+<div class="modal fade" id="messageModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="messageModalTitle">
+                    <i class="fas fa-envelope"></i> Message Details
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div class="mb-3">
+                    <strong>From:</strong> <span id="messageSender"></span>
+                </div>
+                <div class="mb-3">
+                    <strong>Date:</strong> <span id="messageDate"></span>
+                </div>
+                <div class="mb-3">
+                    <strong>Subject:</strong> <span id="messageSubject"></span>
+                </div>
+                <div class="mb-3">
+                    <strong>Message:</strong>
+                    <div class="mt-2 p-3 bg-light border rounded" id="messageContent">
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                <button type="button" class="btn btn-primary" onclick="replyToMessage()">
+                    <i class="fas fa-reply"></i> Reply
+                </button>
+                <button type="button" class="btn btn-success" id="markReadBtn" onclick="markMessageRead()">
+                    <i class="fas fa-check"></i> Mark as Read
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+let currentMessageId = null;
+
+function viewMessage(id, subject, content, sender, date, isRead) {
+    currentMessageId = id;
+    document.getElementById('messageSubject').textContent = subject;
+    document.getElementById('messageContent').textContent = content;
+    document.getElementById('messageSender').textContent = sender;
+    document.getElementById('messageDate').textContent = date;
+    
+    // Show/hide mark as read button
+    const markReadBtn = document.getElementById('markReadBtn');
+    if (isRead) {
+        markReadBtn.style.display = 'none';
+    } else {
+        markReadBtn.style.display = 'inline-block';
+    }
+    
+    const modal = new bootstrap.Modal(document.getElementById('messageModal'));
+    modal.show();
+}
+
+function markMessageRead() {
+    if (currentMessageId) {
+        window.location.href = `/mark_message_read/${currentMessageId}`;
+    }
+}
+
+function replyToMessage() {
+    // Redirect to send message page with reply context
+    window.location.href = "{{ url_for('send_message') }}?reply_to=" + currentMessageId;
+}
+
+function toggleSelectAll(checkbox) {
+    const checkboxes = document.querySelectorAll('.message-checkbox');
+    checkboxes.forEach(cb => cb.checked = checkbox.checked);
+}
+
+function markAllRead() {
+    const unreadMessages = document.querySelectorAll('[data-read="False"]');
+    if (unreadMessages.length === 0) {
+        alert('No unread messages to mark as read.');
+        return;
+    }
+    
+    if (confirm(`Mark all ${unreadMessages.length} unread messages as read?`)) {
+        // In a real implementation, this would make an AJAX call
+        alert('All messages would be marked as read.');
+    }
+}
+
+function deleteSelected() {
+    const selectedCheckboxes = document.querySelectorAll('.message-checkbox:checked');
+    if (selectedCheckboxes.length === 0) {
+        alert('Please select messages to delete.');
+        return;
+    }
+    
+    if (confirm(`Delete ${selectedCheckboxes.length} selected messages?`)) {
+        // In a real implementation, this would make an AJAX call
+        alert(`${selectedCheckboxes.length} messages would be deleted.`);
+    }
+}
+
+function deleteMessage(messageId) {
+    if (confirm('Are you sure you want to delete this message?')) {
+        // In a real implementation, this would make an AJAX call
+        alert(`Message ${messageId} would be deleted.`);
+    }
+}
+
+function filterMessages(filter) {
+    const rows = document.querySelectorAll('.message-row');
+    
+    rows.forEach(row => {
+        const isRead = row.getAttribute('data-read') === 'True';
+        let show = true;
+        
+        switch (filter) {
+            case 'unread':
+                show = !isRead;
+                break;
+            case 'read':
+                show = isRead;
+                break;
+            case 'all':
+            default:
+                show = true;
+                break;
+        }
+        
+        row.style.display = show ? '' : 'none';
+    });
+    
+    // Update button states
+    const buttons = document.querySelectorAll('.btn-group button');
+    buttons.forEach(btn => {
+        btn.classList.remove('btn-outline-secondary', 'btn-outline-primary', 'btn-outline-success');
+        btn.classList.add('btn-outline-secondary');
+    });
+    
+    const activeBtn = event.target;
+    activeBtn.classList.remove('btn-outline-secondary');
+    if (filter === 'unread') {
+        activeBtn.classList.add('btn-outline-primary');
+    } else if (filter === 'read') {
+        activeBtn.classList.add('btn-outline-success');
+    } else {
+        activeBtn.classList.add('btn-outline-secondary');
+    }
+}
+</script>
+{% endblock %}

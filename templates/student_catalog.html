@@ -1,0 +1,457 @@
+{% extends "base.html" %}
+
+{% block title %}Book Catalog - Lancaster University Library{% endblock %}
+
+{% block content %}
+<style>
+.hero-section {
+    background: linear-gradient(135deg, #ea6666 0%, #a24b4b 100%);
+}
+
+.bg-gradient {
+    background: linear-gradient(135deg, #ea6666 0%, #a24b4b 100%);
+}
+
+.card {
+    transition: transform 0.2s;
+    border: none;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+.card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 8px rgba(0,0,0,0.15);
+}
+
+.btn {
+    transition: all 0.3s ease;
+}
+
+.btn:hover {
+    transform: translateY(-1px);
+}
+
+.book-card {
+    min-height: 220px;
+}
+
+.book-card .card-body {
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+}
+
+.book-card .card-text {
+    flex-grow: 1;
+}
+
+.book-card .btn-container {
+    margin-top: auto;
+}
+
+.search-stats {
+    color: #6c757d;
+    font-style: italic;
+}
+</style>
+
+<!-- Header Section -->
+<div class="hero-section bg-gradient text-white rounded-3 p-4 mb-4">
+    <div class="row align-items-center">
+        <div class="col-lg-8">
+            <h2 class="mb-2">
+                <i class="fas fa-books me-2"></i>Library Book Catalog
+            </h2>
+            <p class="mb-0">Browse our complete collection of available books</p>
+        </div>
+        <div class="col-lg-4 text-end">
+            <a href="{{ url_for('student_dashboard') }}" class="btn btn-outline-light">
+                <i class="fas fa-arrow-left me-2"></i>Back to Dashboard
+            </a>
+        </div>
+    </div>
+</div>
+
+<!-- Search Bar -->
+<div class="card mb-4">
+    <div class="card-body">
+        <form method="GET" action="{{ url_for('student_catalog') }}">
+            <div class="row g-3">
+                <div class="col-md-10">
+                    <div class="input-group">
+                        <span class="input-group-text">
+                            <i class="fas fa-search"></i>
+                        </span>
+                        <input type="text" class="form-control" name="search" 
+                               placeholder="Search by title, author, or genre..." 
+                               value="{{ search_term }}"
+                               autocomplete="off">
+                    </div>
+                </div>
+                <div class="col-md-2">
+                    <button type="submit" class="btn btn-primary w-100">
+                        <i class="fas fa-search me-2"></i>Search
+                    </button>
+                </div>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Results Info -->
+<div class="row mb-4">
+    <div class="col-md-6">
+        {% if search_term %}
+            <h5>
+                <i class="fas fa-filter me-2 text-primary"></i>
+                Search Results for "{{ search_term }}"
+            </h5>
+            <p class="search-stats mb-0">
+                Found {{ books|length }} available book{{ 's' if books|length != 1 else '' }}
+            </p>
+        {% else %}
+            <h5>
+                <i class="fas fa-book-open me-2 text-primary"></i>
+                All Available Books
+            </h5>
+            <p class="search-stats mb-0">
+                Showing {{ books|length }} available book{{ 's' if books|length != 1 else '' }}
+            </p>
+        {% endif %}
+    </div>
+    <div class="col-md-6 text-end">
+        {% if search_term %}
+            <a href="{{ url_for('student_catalog') }}" class="btn btn-outline-secondary">
+                <i class="fas fa-times me-2"></i>Clear Search
+            </a>
+        {% endif %}
+    </div>
+</div>
+
+<!-- Books Grid -->
+{% if books %}
+<div class="row g-4">
+    {% for book in books %}
+    <div class="col-lg-3 col-md-4 col-sm-6">
+        <div class="card book-card h-100">
+            <div class="card-body">
+                <div class="d-flex justify-content-between align-items-start mb-2">
+                    <h6 class="card-title text-truncate" title="{{ book[1] }}">
+                        {{ book[1] }}
+                    </h6>
+                    <span class="badge bg-success ms-2">Available</span>
+                </div>
+                
+                <p class="card-text text-muted small mb-2">
+                    <i class="fas fa-user me-1"></i>{{ book[2] }}
+                </p>
+                
+                <div class="mb-2">
+                    <span class="badge bg-secondary me-1">{{ book[3] }}</span>
+                    {% if book[4] %}
+                        <span class="badge bg-info">{{ book[4] }}</span>
+                    {% endif %}
+                </div>
+                
+                <div class="card-text">
+                    <small class="text-muted">
+                        <i class="fas fa-barcode me-1"></i>ISBN: {{ book[0] }}
+                    </small>
+                </div>
+                
+                <div class="btn-container mt-3">
+                    <button class="btn btn-primary w-100" 
+                            onclick="requestBook('{{ book[0] }}', '{{ book[1] }}', '{{ book[2] }}')">
+                        <i class="fas fa-plus me-2"></i>Request Book
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endfor %}
+</div>
+
+<!-- Load More Info -->
+<div class="text-center mt-4">
+    <div class="alert alert-info">
+        <i class="fas fa-info-circle me-2"></i>
+        <strong>Need help finding a specific book?</strong> 
+        Use the search function above or contact the librarian for assistance.
+    </div>
+</div>
+
+{% else %}
+<!-- No Books Found -->
+<div class="text-center py-5">
+    <i class="fas fa-search display-1 text-muted mb-3"></i>
+    {% if search_term %}
+        <h4>No books found matching "{{ search_term }}"</h4>
+        <p class="text-muted mb-4">Try adjusting your search terms or browse all available books.</p>
+        <a href="{{ url_for('student_catalog') }}" class="btn btn-primary me-2">
+            <i class="fas fa-list me-2"></i>View All Books
+        </a>
+    {% else %}
+        <h4>No books currently available</h4>
+        <p class="text-muted mb-4">All books are currently on loan. Check back later!</p>
+    {% endif %}
+    
+    <button class="btn btn-success" data-bs-toggle="modal" data-bs-target="#contactModal">
+        <i class="fas fa-envelope me-2"></i>Contact Librarian
+    </button>
+</div>
+{% endif %}
+
+<!-- Book Request Modal -->
+<div class="modal fade" id="requestModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">
+                    <i class="fas fa-book me-2"></i>Request Book
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div class="mb-3">
+                    <h6 id="bookTitle" class="fw-bold"></h6>
+                    <p id="bookAuthor" class="text-muted mb-2"></p>
+                    <p id="bookISBN" class="small text-muted"></p>
+                </div>
+                <div class="alert alert-info">
+                    <i class="fas fa-info-circle me-2"></i>
+                    <strong>Request Process:</strong><br>
+                    Your request will be sent to the librarian who will contact you when the book is ready for pickup.
+                </div>
+                <div class="mb-3">
+                    <label for="requestNote" class="form-label">Additional Notes (Optional)</label>
+                    <textarea class="form-control" id="requestNote" rows="3" 
+                              placeholder="Any special requests or preferred pickup times..."></textarea>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-primary" onclick="confirmRequest()">
+                    <i class="fas fa-paper-plane me-2"></i>Send Request
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Contact Librarian Modal -->
+<div class="modal fade" id="contactModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">
+                    <i class="fas fa-envelope me-2"></i>Contact Librarian
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <form id="contactForm">
+                    <div class="mb-3">
+                        <label for="subject" class="form-label">Subject</label>
+                        <select class="form-select" id="subject" required>
+                            <option value="">Choose a subject...</option>
+                            <option value="Book Request">Book Request</option>
+                            <option value="Book Availability">Book Availability Inquiry</option>
+                            <option value="Loan Extension">Loan Extension Request</option>
+                            <option value="General Inquiry">General Inquiry</option>
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label for="message" class="form-label">Message</label>
+                        <textarea class="form-control" id="message" rows="4" 
+                                  placeholder="Type your message here..." required></textarea>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-primary" onclick="sendMessage()">
+                    <i class="fas fa-paper-plane me-2"></i>Send Message
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+let currentBookRequest = {};
+
+function requestBook(isbn, title, author) {
+    currentBookRequest = { isbn, title, author };
+    
+    document.getElementById('bookTitle').textContent = title;
+    document.getElementById('bookAuthor').textContent = `by ${author}`;
+    document.getElementById('bookISBN').textContent = `ISBN: ${isbn}`;
+    
+    const modal = new bootstrap.Modal(document.getElementById('requestModal'));
+    modal.show();
+}
+
+function confirmRequest() {
+    const note = document.getElementById('requestNote').value;
+    const { isbn, title, author } = currentBookRequest;
+    
+    // Send actual request to server
+    fetch('/student/request_book', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+            isbn: isbn,
+            title: title,
+            author: author,
+            note: note
+        })
+    })
+    .then(response => response.json())
+    .then(data => {
+        const modal = bootstrap.Modal.getInstance(document.getElementById('requestModal'));
+        modal.hide();
+        
+        // Show success or error message
+        const alertDiv = document.createElement('div');
+        alertDiv.className = `alert alert-${data.success ? 'success' : 'danger'} alert-dismissible fade show position-fixed`;
+        alertDiv.style.cssText = 'top: 20px; right: 20px; z-index: 9999; min-width: 300px;';
+        
+        const icon = data.success ? 'check-circle' : 'exclamation-circle';
+        const statusText = data.success ? 'Request Sent!' : 'Error!';
+        
+        alertDiv.innerHTML = `
+            <i class="fas fa-${icon} me-2"></i>
+            <strong>${statusText}</strong> ${data.message}
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        `;
+        document.body.appendChild(alertDiv);
+        
+        // Auto-remove after 5 seconds
+        setTimeout(() => {
+            if (alertDiv.parentNode) {
+                alertDiv.parentNode.removeChild(alertDiv);
+            }
+        }, 5000);
+        
+        // Reset form
+        document.getElementById('requestNote').value = '';
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        const modal = bootstrap.Modal.getInstance(document.getElementById('requestModal'));
+        modal.hide();
+        
+        // Show error message
+        const alertDiv = document.createElement('div');
+        alertDiv.className = 'alert alert-danger alert-dismissible fade show position-fixed';
+        alertDiv.style.cssText = 'top: 20px; right: 20px; z-index: 9999; min-width: 300px;';
+        alertDiv.innerHTML = `
+            <i class="fas fa-exclamation-circle me-2"></i>
+            <strong>Error!</strong> Failed to send request. Please try again.
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        `;
+        document.body.appendChild(alertDiv);
+        
+        // Auto-remove after 5 seconds
+        setTimeout(() => {
+            if (alertDiv.parentNode) {
+                alertDiv.parentNode.removeChild(alertDiv);
+            }
+        }, 5000);
+    });
+}
+
+function sendMessage() {
+    const subject = document.getElementById('subject').value;
+    const message = document.getElementById('message').value;
+    
+    if (!subject || !message) {
+        alert('Please fill in all fields.');
+        return;
+    }
+    
+    // Send actual message to server
+    fetch('/student/send_message', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+            subject: subject,
+            message: message
+        })
+    })
+    .then(response => response.json())
+    .then(data => {
+        const modal = bootstrap.Modal.getInstance(document.getElementById('contactModal'));
+        modal.hide();
+        
+        // Show success or error message
+        const alertDiv = document.createElement('div');
+        alertDiv.className = `alert alert-${data.success ? 'success' : 'danger'} alert-dismissible fade show position-fixed`;
+        alertDiv.style.cssText = 'top: 20px; right: 20px; z-index: 9999; min-width: 300px;';
+        
+        const icon = data.success ? 'check-circle' : 'exclamation-circle';
+        const statusText = data.success ? 'Message Sent!' : 'Error!';
+        
+        alertDiv.innerHTML = `
+            <i class="fas fa-${icon} me-2"></i>
+            <strong>${statusText}</strong> ${data.message}
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        `;
+        document.body.appendChild(alertDiv);
+        
+        // Auto-remove after 5 seconds
+        setTimeout(() => {
+            if (alertDiv.parentNode) {
+                alertDiv.parentNode.removeChild(alertDiv);
+            }
+        }, 5000);
+        
+        // Reset form
+        document.getElementById('contactForm').reset();
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        const modal = bootstrap.Modal.getInstance(document.getElementById('contactModal'));
+        modal.hide();
+        
+        // Show error message
+        const alertDiv = document.createElement('div');
+        alertDiv.className = 'alert alert-danger alert-dismissible fade show position-fixed';
+        alertDiv.style.cssText = 'top: 20px; right: 20px; z-index: 9999; min-width: 300px;';
+        alertDiv.innerHTML = `
+            <i class="fas fa-exclamation-circle me-2"></i>
+            <strong>Error!</strong> Failed to send message. Please try again.
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        `;
+        document.body.appendChild(alertDiv);
+        
+        // Auto-remove after 5 seconds
+        setTimeout(() => {
+            if (alertDiv.parentNode) {
+                alertDiv.parentNode.removeChild(alertDiv);
+            }
+        }, 5000);
+    });
+}
+
+// Auto-focus search on page load
+document.addEventListener('DOMContentLoaded', function() {
+    const searchInput = document.querySelector('input[name="search"]');
+    if (searchInput && !searchInput.value) {
+        setTimeout(() => searchInput.focus(), 100);
+    }
+});
+
+// Search on Enter key
+document.querySelector('input[name="search"]').addEventListener('keypress', function(e) {
+    if (e.key === 'Enter') {
+        e.preventDefault();
+        this.closest('form').submit();
+    }
+});
+</script>
+{% endblock %}

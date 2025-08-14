@@ -1,0 +1,99 @@
+{% extends "base.html" %}
+
+{% block title %}Add Book - Lancaster University Library{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-lg-8">
+        <div class="card shadow">
+            <div class="card-header bg-primary text-white">
+                <h4 class="card-title mb-0">
+                    <i class="fas fa-plus-circle me-2"></i>Add New Book
+                </h4>
+            </div>
+            <div class="card-body">
+                <form method="POST">
+                    <div class="row g-3">
+                        <div class="col-md-6">
+                            <label for="isbn" class="form-label">ISBN *</label>
+                            <input type="text" class="form-control" id="isbn" name="isbn" required
+                                   placeholder="978-0-123456-78-9">
+                        </div>
+                        <div class="col-md-6">
+                            <label for="year" class="form-label">Publication Year *</label>
+                            <input type="number" class="form-control" id="year" name="year" required
+                                   min="1000" max="2024" placeholder="2024">
+                        </div>
+                        <div class="col-12">
+                            <label for="title" class="form-label">Book Title *</label>
+                            <input type="text" class="form-control" id="title" name="title" required
+                                   placeholder="Enter the book title">
+                        </div>
+                        <div class="col-md-6">
+                            <label for="author" class="form-label">Author *</label>
+                            <input type="text" class="form-control" id="author" name="author" required
+                                   placeholder="Author name">
+                        </div>
+                        <div class="col-md-6">
+                            <label for="genre" class="form-label">Genre</label>
+                            <select class="form-select" id="genre" name="genre">
+                                <option value="Fiction">Fiction</option>
+                                <option value="Non-Fiction">Non-Fiction</option>
+                                <option value="Science">Science</option>
+                                <option value="History">History</option>
+                                <option value="Biography">Biography</option>
+                                <option value="Mystery">Mystery</option>
+                                <option value="Romance">Romance</option>
+                                <option value="Fantasy">Fantasy</option>
+                                <option value="Sci-Fi">Sci-Fi</option>
+                                <option value="Educational">Educational</option>
+                                <option value="Horror">Horror</option>
+                                <option value="Thriller">Thriller</option>
+                                <option value="Classic">Classic</option>
+                                <option value="Action And Adventure">Action And Adventure</option>
+                                <option value="Other">Other</option>
+                            </select>
+                        </div>
+                    </div>
+                    
+                    <div class="d-flex justify-content-between mt-4">
+                        <div>
+                            {% if session.user_type == 'librarian' %}
+                                <a href="{{ url_for('librarian_dashboard') }}" class="btn btn-outline-primary">
+                                    <i class="fas fa-arrow-left me-2"></i>Return to Dashboard
+                                </a>
+                            {% elif session.user_type == 'student' %}
+                                <a href="{{ url_for('student_dashboard') }}" class="btn btn-outline-success">
+                                    <i class="fas fa-arrow-left me-2"></i>Return to Dashboard
+                                </a>
+                            {% endif %}
+                        </div>
+                        <div class="d-flex gap-2">
+                            <a href="{{ url_for('books') }}" class="btn btn-outline-secondary">
+                                <i class="fas fa-times me-2"></i>Cancel
+                            </a>
+                            <button type="submit" class="btn btn-primary">
+                                <i class="fas fa-save me-2"></i>Add Book
+                            </button>
+                        </div>
+                    </div>
+                </form>
+            </div>
+        </div>
+        
+        <div class="card mt-4">
+            <div class="card-body">
+                <h6 class="card-title">
+                    <i class="fas fa-info-circle me-2"></i>Tips for Adding Books
+                </h6>
+                <ul class="mb-0">
+                    <li>Make sure the ISBN is unique and properly formatted</li>
+                    <li>Double-check the author name and book title for accuracy</li>
+                    <li>Select the most appropriate genre for easy categorization</li>
+                    <li>The book will be automatically marked as "Available" when added</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

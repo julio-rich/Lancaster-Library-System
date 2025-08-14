@@ -1,0 +1,423 @@
+{% extends "base.html" %}
+
+{% block title %}Create Announcement - Lancaster University Library{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row justify-content-center">
+        <div class="col-lg-8">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <div>
+                    <h2>
+                        <i class="fas fa-plus-circle me-3"></i>Create Announcement
+                    </h2>
+                    <p class="text-muted">Post important notifications and updates for library users</p>
+                </div>
+                <a href="{{ url_for('announcements') }}" class="btn btn-outline-secondary">
+                    <i class="fas fa-arrow-left me-2"></i>Back to Announcements
+                </a>
+            </div>
+
+            <div class="card shadow-sm">
+                <div class="card-header bg-primary text-white">
+                    <h5 class="mb-0"><i class="fas fa-bullhorn me-2"></i>New Announcement</h5>
+                </div>
+                <div class="card-body">
+                    <form method="POST" action="{{ url_for('create_announcement') }}">
+                        <div class="mb-4">
+                            <label for="title" class="form-label">
+                                <strong>Title</strong> <span class="text-danger">*</span>
+                            </label>
+                            <input type="text" class="form-control form-control-lg" id="title" name="title" 
+                                   placeholder="Enter announcement title..." required>
+                            <div class="form-text">Keep it clear and concise (max 100 characters recommended)</div>
+                        </div>
+
+                        <div class="mb-4">
+                            <label for="content" class="form-label">
+                                <strong>Content</strong> <span class="text-danger">*</span>
+                            </label>
+                            <textarea class="form-control" id="content" name="content" rows="8" 
+                                      placeholder="Write your announcement content here..." required></textarea>
+                            <div class="form-text">
+                                Provide all necessary details. Line breaks will be preserved in the display.
+                            </div>
+                            <div class="mt-2">
+                                <small class="text-muted">
+                                    <span id="charCount">0</span> characters
+                                </small>
+                            </div>
+                        </div>
+
+                        <div class="row mb-4">
+                            <div class="col-md-6">
+                                <label for="priority" class="form-label"><strong>Priority Level</strong></label>
+                                <select class="form-select" id="priority" name="priority">
+                                    <option value="low">
+                                        <i class="fas fa-info-circle"></i> Low - General information
+                                    </option>
+                                    <option value="normal" selected>
+                                        <i class="fas fa-bell"></i> Normal - Standard notification
+                                    </option>
+                                    <option value="medium">
+                                        <i class="fas fa-exclamation-triangle"></i> Medium - Important update
+                                    </option>
+                                    <option value="high">
+                                        <i class="fas fa-exclamation-circle"></i> High - Urgent attention required
+                                    </option>
+                                </select>
+                                <div class="form-text">Higher priority announcements are displayed more prominently</div>
+                            </div>
+                            <div class="col-md-6">
+                                <label for="target_audience" class="form-label"><strong>Target Audience</strong></label>
+                                <select class="form-select" id="target_audience" name="target_audience">
+                                    <option value="all">All Users (Students & Librarians)</option>
+                                    <option value="student">Students Only</option>
+                                    <option value="librarian">Librarians Only</option>
+                                </select>
+                                <div class="form-text">Choose who should see this announcement</div>
+                            </div>
+                        </div>
+
+                        <div class="mb-4">
+                            <label for="expiry_date" class="form-label"><strong>Expiry Date</strong> (Optional)</label>
+                            <input type="date" class="form-control" id="expiry_date" name="expiry_date" 
+                                   min="{{ today }}">
+                            <div class="form-text">
+                                Leave empty for no expiration. The announcement will automatically be hidden after this date.
+                            </div>
+                        </div>
+
+                        <!-- Preview Section -->
+                        <div class="mb-4">
+                            <div class="d-flex justify-content-between align-items-center mb-2">
+                                <label class="form-label mb-0"><strong>Preview</strong></label>
+                                <button type="button" class="btn btn-sm btn-outline-info" onclick="updatePreview()">
+                                    <i class="fas fa-eye me-1"></i>Update Preview
+                                </button>
+                            </div>
+                            <div id="announcementPreview" class="border rounded p-3 bg-light">
+                                <div class="text-muted text-center py-3">
+                                    <i class="fas fa-info-circle me-2"></i>
+                                    Fill in the form above and click "Update Preview" to see how your announcement will look.
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="d-flex justify-content-between">
+                            <div>
+                                <button type="button" class="btn btn-outline-info" onclick="saveDraft()">
+                                    <i class="fas fa-save me-2"></i>Save Draft
+                                </button>
+                            </div>
+                            <div>
+                                <button type="button" class="btn btn-secondary me-2" onclick="resetForm()">
+                                    <i class="fas fa-undo me-2"></i>Reset
+                                </button>
+                                <button type="submit" class="btn btn-primary">
+                                    <i class="fas fa-bullhorn me-2"></i>Publish Announcement
+                                </button>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+            </div>
+
+            <!-- Quick Templates -->
+            <div class="card shadow-sm mt-4">
+                <div class="card-header">
+                    <h6 class="mb-0"><i class="fas fa-templates me-2"></i>Quick Templates</h6>
+                </div>
+                <div class="card-body">
+                    <p class="small text-muted mb-3">Click on a template to quickly fill in common announcement types:</p>
+                    <div class="row g-2">
+                        <div class="col-md-4">
+                            <button type="button" class="btn btn-outline-primary btn-sm w-100" onclick="useTemplate('maintenance')">
+                                <i class="fas fa-tools me-1"></i>System Maintenance
+                            </button>
+                        </div>
+                        <div class="col-md-4">
+                            <button type="button" class="btn btn-outline-success btn-sm w-100" onclick="useTemplate('hours')">
+                                <i class="fas fa-clock me-1"></i>Changed Hours
+                            </button>
+                        </div>
+                        <div class="col-md-4">
+                            <button type="button" class="btn btn-outline-warning btn-sm w-100" onclick="useTemplate('event')">
+                                <i class="fas fa-calendar me-1"></i>Library Event
+                            </button>
+                        </div>
+                        <div class="col-md-4">
+                            <button type="button" class="btn btn-outline-info btn-sm w-100" onclick="useTemplate('policy')">
+                                <i class="fas fa-gavel me-1"></i>Policy Update
+                            </button>
+                        </div>
+                        <div class="col-md-4">
+                            <button type="button" class="btn btn-outline-danger btn-sm w-100" onclick="useTemplate('closure')">
+                                <i class="fas fa-door-closed me-1"></i>Temporary Closure
+                            </button>
+                        </div>
+                        <div class="col-md-4">
+                            <button type="button" class="btn btn-outline-secondary btn-sm w-100" onclick="useTemplate('resources')">
+                                <i class="fas fa-books me-1"></i>New Resources
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+// Character counter
+document.getElementById('content').addEventListener('input', function(e) {
+    document.getElementById('charCount').textContent = e.target.value.length;
+});
+
+// Set minimum date to today
+document.getElementById('expiry_date').min = new Date().toISOString().split('T')[0];
+
+// Preview functionality
+function updatePreview() {
+    const title = document.getElementById('title').value;
+    const content = document.getElementById('content').value;
+    const priority = document.getElementById('priority').value;
+    const targetAudience = document.getElementById('target_audience').value;
+    
+    if (!title && !content) {
+        document.getElementById('announcementPreview').innerHTML = `
+            <div class="text-muted text-center py-3">
+                <i class="fas fa-info-circle me-2"></i>
+                Fill in the title and content to see a preview.
+            </div>
+        `;
+        return;
+    }
+    
+    const priorityClass = priority === 'high' ? 'border-danger' : 
+                         priority === 'medium' ? 'border-warning' : 
+                         priority === 'low' ? 'border-info' : 'border-primary';
+    
+    const priorityBg = priority === 'high' ? 'bg-danger text-white' : 
+                      priority === 'medium' ? 'bg-warning text-dark' : 
+                      priority === 'low' ? 'bg-info text-white' : 'bg-primary text-white';
+    
+    const targetText = targetAudience === 'all' ? 'All Users' : 
+                      targetAudience === 'student' ? 'Students Only' : 'Librarians Only';
+    
+    document.getElementById('announcementPreview').innerHTML = `
+        <div class="card ${priorityClass}" style="border-left-width: 4px !important;">
+            <div class="card-header ${priorityBg}">
+                <div class="d-flex justify-content-between align-items-center">
+                    <h6 class="mb-0">
+                        <i class="fas fa-megaphone me-2"></i>${title || 'Announcement Title'}
+                    </h6>
+                    <span class="badge ${priority === 'high' ? 'bg-light text-danger' : 
+                                        priority === 'medium' ? 'bg-dark text-warning' : 
+                                        'bg-light text-info'}">
+                        ${priority.charAt(0).toUpperCase() + priority.slice(1)} Priority
+                    </span>
+                </div>
+            </div>
+            <div class="card-body">
+                <div class="mb-3">
+                    ${(content || 'Your announcement content will appear here...').replace(/\n/g, '<br>')}
+                </div>
+                <div class="border-top pt-3 mt-3">
+                    <div class="row g-2 small text-muted">
+                        <div class="col-sm-6">
+                            <i class="fas fa-user me-1"></i>
+                            <strong>{{ session.name }}</strong>
+                        </div>
+                        <div class="col-sm-6">
+                            <i class="fas fa-calendar me-1"></i>
+                            ${new Date().toLocaleDateString()}
+                        </div>
+                        <div class="col-12">
+                            <i class="fas fa-users me-1"></i>
+                            Target: ${targetText}
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    `;
+}
+
+// Template system
+const templates = {
+    maintenance: {
+        title: "Scheduled System Maintenance",
+        content: "We will be performing scheduled maintenance on our library system on [DATE] from [START TIME] to [END TIME].\n\nDuring this time, the following services may be unavailable:\n• Online catalog search\n• Account renewals\n• Digital resources\n\nWe apologize for any inconvenience and appreciate your patience.",
+        priority: "medium",
+        target_audience: "all"
+    },
+    hours: {
+        title: "Updated Library Hours",
+        content: "Please note our updated operating hours effective [DATE]:\n\nMonday - Friday: [HOURS]\nSaturday: [HOURS]\nSunday: [HOURS]\n\nThese changes are due to [REASON]. We thank you for your understanding.",
+        priority: "normal",
+        target_audience: "all"
+    },
+    event: {
+        title: "Upcoming Library Event",
+        content: "Join us for [EVENT NAME] on [DATE] at [TIME]!\n\nLocation: [LOCATION]\n\n[EVENT DESCRIPTION]\n\nRegistration: [REGISTRATION DETAILS]\n\nRefreshments will be provided. We look forward to seeing you there!",
+        priority: "normal",
+        target_audience: "all"
+    },
+    policy: {
+        title: "Library Policy Update",
+        content: "We have updated our [POLICY NAME] policy effective [DATE].\n\nKey changes include:\n• [CHANGE 1]\n• [CHANGE 2]\n• [CHANGE 3]\n\nFor the complete updated policy, please visit [LINK] or ask at the front desk.",
+        priority: "medium",
+        target_audience: "all"
+    },
+    closure: {
+        title: "Temporary Library Closure",
+        content: "The library will be temporarily closed on [DATE(S)] due to [REASON].\n\nNormal operations will resume on [RESUME DATE] at [TIME].\n\nDuring the closure:\n• Book returns can be placed in the external drop box\n• Digital resources remain available 24/7\n• Emergency contact: [CONTACT INFO]",
+        priority: "high",
+        target_audience: "all"
+    },
+    resources: {
+        title: "New Library Resources Available",
+        content: "We're excited to announce new additions to our collection!\n\nNew resources include:\n• [RESOURCE TYPE 1]: [DESCRIPTION]\n• [RESOURCE TYPE 2]: [DESCRIPTION]\n• [RESOURCE TYPE 3]: [DESCRIPTION]\n\nThese materials are now available for checkout. Ask our staff for assistance in locating these new resources.",
+        priority: "low",
+        target_audience: "all"
+    }
+};
+
+function useTemplate(templateName) {
+    const template = templates[templateName];
+    if (template) {
+        document.getElementById('title').value = template.title;
+        document.getElementById('content').value = template.content;
+        document.getElementById('priority').value = template.priority;
+        document.getElementById('target_audience').value = template.target_audience;
+        
+        // Update character count
+        document.getElementById('charCount').textContent = template.content.length;
+        
+        // Auto-update preview
+        updatePreview();
+    }
+}
+
+function saveDraft() {
+    // This would typically save to localStorage or send to server
+    const draftData = {
+        title: document.getElementById('title').value,
+        content: document.getElementById('content').value,
+        priority: document.getElementById('priority').value,
+        target_audience: document.getElementById('target_audience').value,
+        expiry_date: document.getElementById('expiry_date').value
+    };
+    
+    localStorage.setItem('announcement_draft', JSON.stringify(draftData));
+    
+    // Show confirmation
+    const alertDiv = document.createElement('div');
+    alertDiv.className = 'alert alert-success alert-dismissible fade show position-fixed';
+    alertDiv.style.cssText = 'top: 20px; right: 20px; z-index: 9999; min-width: 300px;';
+    alertDiv.innerHTML = `
+        <i class="fas fa-check-circle me-2"></i>
+        <strong>Draft Saved!</strong> Your announcement has been saved locally.
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    `;
+    document.body.appendChild(alertDiv);
+    
+    // Auto-remove after 3 seconds
+    setTimeout(() => {
+        if (alertDiv.parentNode) {
+            alertDiv.parentNode.removeChild(alertDiv);
+        }
+    }, 3000);
+}
+
+function resetForm() {
+    if (confirm('Are you sure you want to reset the form? All entered data will be lost.')) {
+        document.getElementById('title').value = '';
+        document.getElementById('content').value = '';
+        document.getElementById('priority').value = 'normal';
+        document.getElementById('target_audience').value = 'all';
+        document.getElementById('expiry_date').value = '';
+        document.getElementById('charCount').textContent = '0';
+        
+        // Reset preview
+        document.getElementById('announcementPreview').innerHTML = `
+            <div class="text-muted text-center py-3">
+                <i class="fas fa-info-circle me-2"></i>
+                Fill in the form above and click "Update Preview" to see how your announcement will look.
+            </div>
+        `;
+    }
+}
+
+// Load draft on page load
+document.addEventListener('DOMContentLoaded', function() {
+    const savedDraft = localStorage.getItem('announcement_draft');
+    if (savedDraft) {
+        try {
+            const draftData = JSON.parse(savedDraft);
+            if (confirm('A saved draft was found. Would you like to restore it?')) {
+                document.getElementById('title').value = draftData.title || '';
+                document.getElementById('content').value = draftData.content || '';
+                document.getElementById('priority').value = draftData.priority || 'normal';
+                document.getElementById('target_audience').value = draftData.target_audience || 'all';
+                document.getElementById('expiry_date').value = draftData.expiry_date || '';
+                document.getElementById('charCount').textContent = (draftData.content || '').length;
+            }
+        } catch (e) {
+            console.error('Error loading draft:', e);
+        }
+    }
+});
+
+// Clear draft after successful submission
+document.querySelector('form').addEventListener('submit', function() {
+    localStorage.removeItem('announcement_draft');
+});
+
+// Auto-save draft every 30 seconds
+setInterval(saveDraft, 30000);
+</script>
+
+<style>
+.form-control:focus, .form-select:focus {
+    border-color: #0d6efd;
+    box-shadow: 0 0 0 0.2rem rgba(13, 110, 253, 0.25);
+}
+
+.card {
+    border: none;
+    border-radius: 8px;
+}
+
+.form-control-lg {
+    font-size: 1.1rem;
+    padding: 0.75rem 1rem;
+}
+
+#announcementPreview .card {
+    margin: 0;
+}
+
+.btn-outline-primary:hover, .btn-outline-success:hover, 
+.btn-outline-warning:hover, .btn-outline-info:hover,
+.btn-outline-danger:hover, .btn-outline-secondary:hover {
+    transform: translateY(-1px);
+}
+
+.form-text {
+    font-size: 0.875em;
+    color: #6c757d;
+}
+
+textarea {
+    resize: vertical;
+    min-height: 120px;
+}
+
+.border-danger { border-color: #dc3545 !important; }
+.border-warning { border-color: #ffc107 !important; }
+.border-info { border-color: #0dcaf0 !important; }
+.border-primary { border-color: #0d6efd !important; }
+</style>
+{% endblock %}

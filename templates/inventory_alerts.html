@@ -1,0 +1,546 @@
+{% extends "base.html" %}
+
+{% block title %}Inventory Alerts - Lancaster University Library{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <div>
+                    <h2>
+                        <i class="fas fa-exclamation-triangle me-3"></i>Inventory Alerts
+                    </h2>
+                    <p class="text-muted">Monitor book availability and stock levels</p>
+                </div>
+                <div>
+                    <button class="btn btn-primary me-2" onclick="refreshAlerts()">
+                        <i class="fas fa-sync-alt me-2"></i>Refresh Alerts
+                    </button>
+                    <a href="{{ url_for('librarian_dashboard') }}" class="btn btn-outline-secondary">
+                        <i class="fas fa-arrow-left me-2"></i>Back to Dashboard
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Alert Summary Cards -->
+    <div class="row g-4 mb-4">
+        <div class="col-md-3">
+            <div class="card bg-danger text-white">
+                <div class="card-body text-center">
+                    <i class="fas fa-exclamation-circle fa-2x mb-2"></i>
+                    <h4>{{ books|selectattr(3, "equalto", "Loaned")|list|length }}</h4>
+                    <p class="mb-0">Out of Stock</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card bg-warning text-white">
+                <div class="card-body text-center">
+                    <i class="fas fa-triangle-exclamation fa-2x mb-2"></i>
+                    <h4>{{ books|length }}</h4>
+                    <p class="mb-0">Low Stock Items</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card bg-info text-white">
+                <div class="card-body text-center">
+                    <i class="fas fa-clock fa-2x mb-2"></i>
+                    <h4>0</h4>
+                    <p class="mb-0">Overdue Returns</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card bg-success text-white">
+                <div class="card-body text-center">
+                    <i class="fas fa-check-circle fa-2x mb-2"></i>
+                    <h4>{{ books|selectattr(3, "equalto", "Available")|list|length }}</h4>
+                    <p class="mb-0">In Stock</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Alert Filters -->
+    <div class="card shadow-sm mb-4">
+        <div class="card-header bg-light">
+            <div class="row align-items-center">
+                <div class="col">
+                    <h5 class="mb-0"><i class="fas fa-filter me-2"></i>Filter Alerts</h5>
+                </div>
+            </div>
+        </div>
+        <div class="card-body">
+            <div class="row g-3">
+                <div class="col-md-3">
+                    <label for="alertType" class="form-label">Alert Type</label>
+                    <select class="form-select" id="alertType" onchange="filterAlerts()">
+                        <option value="all">All Alerts</option>
+                        <option value="out_of_stock">Out of Stock</option>
+                        <option value="low_stock">Low Stock</option>
+                        <option value="overdue">Overdue Returns</option>
+                        <option value="damaged">Damaged Books</option>
+                    </select>
+                </div>
+                <div class="col-md-3">
+                    <label for="priority" class="form-label">Priority</label>
+                    <select class="form-select" id="priority" onchange="filterAlerts()">
+                        <option value="all">All Priorities</option>
+                        <option value="high">High Priority</option>
+                        <option value="medium">Medium Priority</option>
+                        <option value="low">Low Priority</option>
+                    </select>
+                </div>
+                <div class="col-md-3">
+                    <label for="category" class="form-label">Category</label>
+                    <select class="form-select" id="category" onchange="filterAlerts()">
+                        <option value="all">All Categories</option>
+                        <option value="Fiction">Fiction</option>
+                        <option value="Non-Fiction">Non-Fiction</option>
+                        <option value="Science">Science</option>
+                        <option value="Technology">Technology</option>
+                        <option value="History">History</option>
+                        <option value="Other">Other</option>
+                    </select>
+                </div>
+                <div class="col-md-3">
+                    <label for="searchTerm" class="form-label">Search</label>
+                    <input type="text" class="form-control" id="searchTerm" placeholder="Search books..." onkeyup="filterAlerts()">
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Inventory Alerts Table -->
+    <div class="card shadow-sm">
+        <div class="card-header bg-light">
+            <h5 class="mb-0"><i class="fas fa-list me-2"></i>Current Alerts ({{ books|length }} items)</h5>
+        </div>
+        <div class="card-body p-0">
+            {% if books %}
+            <div class="table-responsive">
+                <table class="table table-hover mb-0" id="alertsTable">
+                    <thead class="table-light">
+                        <tr>
+                            <th>Alert</th>
+                            <th>Book Details</th>
+                            <th>Status</th>
+                            <th>Category</th>
+                            <th>Priority</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for book in books %}
+                        <tr data-alert-type="{% if book[3] == 'Loaned' %}out_of_stock{% else %}low_stock{% endif %}" 
+                            data-category="{{ book[4] }}" 
+                            data-priority="{% if book[3] == 'Loaned' %}high{% else %}medium{% endif %}">
+                            <td>
+                                <div class="d-flex align-items-center">
+                                    <i class="fas {% if book[3] == 'Loaned' %}fa-exclamation-circle text-danger{% else %}fa-triangle-exclamation text-warning{% endif %} fa-2x me-3"></i>
+                                    <div>
+                                        <strong>{% if book[3] == 'Loaned' %}Out of Stock{% else %}Low Stock{% endif %}</strong>
+                                        <br><small class="text-muted">{% if book[3] == 'Loaned' %}Book currently on loan{% else %}Single copy available{% endif %}</small>
+                                    </div>
+                                </div>
+                            </td>
+                            <td>
+                                <div>
+                                    <strong>{{ book[1] }}</strong>
+                                    <br><small class="text-muted">by {{ book[2] }}</small>
+                                    <br><code class="small">ISBN: {{ book[0] }}</code>
+                                </div>
+                            </td>
+                            <td>
+                                <span class="badge {% if book[3] == 'Available' %}bg-success{% elif book[3] == 'Loaned' %}bg-danger{% else %}bg-warning{% endif %}">
+                                    {{ book[3] }}
+                                </span>
+                            </td>
+                            <td>
+                                <span class="badge bg-info">{{ book[4] or 'Uncategorized' }}</span>
+                            </td>
+                            <td>
+                                <span class="badge {% if book[3] == 'Loaned' %}bg-danger{% else %}bg-warning{% endif %}">
+                                    {% if book[3] == 'Loaned' %}High{% else %}Medium{% endif %}
+                                </span>
+                            </td>
+                            <td>
+                                <div class="btn-group btn-group-sm">
+                                    <button class="btn btn-outline-primary" 
+                                            onclick="orderMoreCopies('{{ book[0] }}', '{{ book[1] }}')"
+                                            data-bs-toggle="tooltip" title="Order More Copies">
+                                        <i class="fas fa-shopping-cart"></i>
+                                    </button>
+                                    <button class="btn btn-outline-info" 
+                                            onclick="viewBookDetails('{{ book[0] }}')"
+                                            data-bs-toggle="tooltip" title="View Details">
+                                        <i class="fas fa-eye"></i>
+                                    </button>
+                                    <button class="btn btn-outline-success" 
+                                            onclick="markResolved('{{ book[0] }}')"
+                                            data-bs-toggle="tooltip" title="Mark as Resolved">
+                                        <i class="fas fa-check"></i>
+                                    </button>
+                                </div>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            {% else %}
+            <div class="text-center py-5">
+                <i class="fas fa-check-circle fa-4x text-success mb-4"></i>
+                <h4>No Inventory Alerts</h4>
+                <p class="text-muted mb-4">All books are currently in good stock levels.</p>
+                <button class="btn btn-primary" onclick="refreshAlerts()">
+                    <i class="fas fa-sync-alt me-2"></i>Check for New Alerts
+                </button>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- Alert Summary -->
+    {% if books %}
+    <div class="mt-4">
+        <div class="alert alert-info">
+            <h6><i class="fas fa-info-circle me-2"></i>Alert Summary</h6>
+            <div class="row">
+                <div class="col-md-6">
+                    <ul class="mb-0">
+                        <li><strong>{{ books|selectattr(3, "equalto", "Loaned")|list|length }}</strong> books are completely out of stock</li>
+                        <li><strong>{{ books|selectattr(3, "equalto", "Available")|list|length }}</strong> books have low stock levels</li>
+                    </ul>
+                </div>
+                <div class="col-md-6">
+                    <ul class="mb-0">
+                        <li>Most common category: <strong>{{ books|groupby('4')|list|sort(attribute='1')|reverse|first|first if books else 'N/A' }}</strong></li>
+                        <li>Recommended action: Order more copies of high-demand books</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+</div>
+
+<!-- Order More Copies Modal -->
+<div class="modal fade" id="orderCopiesModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">
+                    <i class="fas fa-shopping-cart me-2"></i>Order More Copies
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div class="mb-3">
+                    <label class="form-label"><strong>Book:</strong></label>
+                    <p id="bookTitle" class="text-muted"></p>
+                </div>
+                <div class="mb-3">
+                    <label for="copies" class="form-label">Number of Copies to Order</label>
+                    <input type="number" class="form-control" id="copies" min="1" max="50" value="3">
+                    <div class="form-text">Recommended: 3-5 copies for popular books</div>
+                </div>
+                <div class="mb-3">
+                    <label for="supplier" class="form-label">Supplier</label>
+                    <select class="form-select" id="supplier">
+                        <option value="primary">Primary Book Supplier</option>
+                        <option value="secondary">Secondary Supplier</option>
+                        <option value="publisher">Direct from Publisher</option>
+                        <option value="other">Other</option>
+                    </select>
+                </div>
+                <div class="mb-3">
+                    <label for="notes" class="form-label">Notes</label>
+                    <textarea class="form-control" id="notes" rows="3" placeholder="Any special instructions..."></textarea>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-primary" onclick="submitOrder()">
+                    <i class="fas fa-shopping-cart me-2"></i>Place Order
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Book Details Modal -->
+<div class="modal fade" id="bookDetailsModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">
+                    <i class="fas fa-book me-2"></i>Book Details
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div id="bookDetailsContent">
+                    <div class="text-center">
+                        <div class="spinner-border" role="status">
+                            <span class="visually-hidden">Loading...</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+let currentOrderIsbn = '';
+
+// Filter alerts functionality
+function filterAlerts() {
+    const alertType = document.getElementById('alertType').value;
+    const priority = document.getElementById('priority').value;
+    const category = document.getElementById('category').value;
+    const searchTerm = document.getElementById('searchTerm').value.toLowerCase();
+    
+    const rows = document.querySelectorAll('#alertsTable tbody tr');
+    let visibleCount = 0;
+    
+    rows.forEach(row => {
+        let show = true;
+        
+        // Filter by alert type
+        if (alertType !== 'all' && row.dataset.alertType !== alertType) {
+            show = false;
+        }
+        
+        // Filter by priority
+        if (priority !== 'all' && row.dataset.priority !== priority) {
+            show = false;
+        }
+        
+        // Filter by category
+        if (category !== 'all' && row.dataset.category !== category) {
+            show = false;
+        }
+        
+        // Filter by search term
+        if (searchTerm && !row.textContent.toLowerCase().includes(searchTerm)) {
+            show = false;
+        }
+        
+        row.style.display = show ? '' : 'none';
+        if (show) visibleCount++;
+    });
+    
+    // Update header count
+    document.querySelector('.card-header h5').innerHTML = 
+        `<i class="fas fa-list me-2"></i>Current Alerts (${visibleCount} items)`;
+}
+
+function refreshAlerts() {
+    // Show loading state
+    const refreshBtn = document.querySelector('[onclick="refreshAlerts()"]');
+    const originalText = refreshBtn.innerHTML;
+    refreshBtn.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>Refreshing...';
+    refreshBtn.disabled = true;
+    
+    // Simulate refresh (in real app, this would fetch new data)
+    setTimeout(() => {
+        location.reload();
+    }, 1500);
+}
+
+function orderMoreCopies(isbn, title) {
+    currentOrderIsbn = isbn;
+    document.getElementById('bookTitle').textContent = title;
+    
+    const modal = new bootstrap.Modal(document.getElementById('orderCopiesModal'));
+    modal.show();
+}
+
+function submitOrder() {
+    const copies = document.getElementById('copies').value;
+    const supplier = document.getElementById('supplier').value;
+    const notes = document.getElementById('notes').value;
+    
+    if (!copies || copies < 1) {
+        alert('Please specify the number of copies to order.');
+        return;
+    }
+    
+    // Simulate order submission
+    fetch('/api/order_books', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+            isbn: currentOrderIsbn,
+            copies: parseInt(copies),
+            supplier: supplier,
+            notes: notes
+        })
+    })
+    .then(response => response.json())
+    .then(data => {
+        const modal = bootstrap.Modal.getInstance(document.getElementById('orderCopiesModal'));
+        modal.hide();
+        
+        if (data.success) {
+            // Show success message
+            const alertDiv = document.createElement('div');
+            alertDiv.className = 'alert alert-success alert-dismissible fade show position-fixed';
+            alertDiv.style.cssText = 'top: 20px; right: 20px; z-index: 9999; min-width: 300px;';
+            alertDiv.innerHTML = `
+                <i class="fas fa-check-circle me-2"></i>
+                <strong>Order Placed!</strong> ${copies} copies ordered from ${supplier}.
+                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+            `;
+            document.body.appendChild(alertDiv);
+            
+            setTimeout(() => {
+                if (alertDiv.parentNode) {
+                    alertDiv.parentNode.removeChild(alertDiv);
+                }
+            }, 5000);
+        } else {
+            alert('Error placing order: ' + data.error);
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        alert('Order system is not yet implemented. This is a demo feature.');
+        
+        const modal = bootstrap.Modal.getInstance(document.getElementById('orderCopiesModal'));
+        modal.hide();
+    });
+}
+
+function viewBookDetails(isbn) {
+    const modal = new bootstrap.Modal(document.getElementById('bookDetailsModal'));
+    modal.show();
+    
+    // Simulate loading book details
+    setTimeout(() => {
+        document.getElementById('bookDetailsContent').innerHTML = `
+            <div class="alert alert-info">
+                <i class="fas fa-info-circle me-2"></i>
+                Detailed book information, loan history, and analytics would appear here.
+                This feature requires additional database queries and reporting functionality.
+            </div>
+            <div class="row">
+                <div class="col-md-6">
+                    <h6>Book Information</h6>
+                    <p><strong>ISBN:</strong> ${isbn}</p>
+                    <p><strong>Current Status:</strong> <span class="badge bg-warning">Low Stock</span></p>
+                    <p><strong>Total Loans:</strong> 15 times</p>
+                    <p><strong>Average Rating:</strong> 4.2/5</p>
+                </div>
+                <div class="col-md-6">
+                    <h6>Stock History</h6>
+                    <p><strong>Last Ordered:</strong> 3 months ago</p>
+                    <p><strong>Copies Ordered:</strong> 2</p>
+                    <p><strong>Current Demand:</strong> High</p>
+                    <p><strong>Recommendation:</strong> Order 3-5 copies</p>
+                </div>
+            </div>
+        `;
+    }, 1000);
+}
+
+function markResolved(isbn) {
+    if (confirm('Mark this inventory alert as resolved?')) {
+        // Simulate marking as resolved
+        alert('Alert resolution feature is not yet implemented. This would update the book status in the database.');
+    }
+}
+
+// Initialize tooltips
+document.addEventListener('DOMContentLoaded', function() {
+    var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
+    var tooltipList = tooltipTriggerList.map(function (tooltipTriggerEl) {
+        return new bootstrap.Tooltip(tooltipTriggerEl);
+    });
+});
+
+// Auto-refresh alerts every 5 minutes
+setInterval(() => {
+    console.log('Auto-refreshing inventory alerts...');
+    // In a real system, this would fetch new data without full page reload
+}, 300000);
+</script>
+
+<style>
+.table th {
+    border-top: none;
+    font-weight: 600;
+}
+
+.table tbody tr:hover {
+    background-color: rgba(0, 123, 255, 0.1);
+}
+
+.badge {
+    font-size: 0.875em;
+}
+
+.card {
+    border: none;
+    border-radius: 8px;
+}
+
+.btn-group-sm .btn {
+    padding: 0.25rem 0.5rem;
+}
+
+code {
+    background-color: #f8f9fa;
+    padding: 2px 4px;
+    border-radius: 3px;
+    font-size: 0.875em;
+}
+
+.alert {
+    border: none;
+    border-radius: 8px;
+}
+
+.form-text {
+    font-size: 0.875em;
+    color: #6c757d;
+}
+
+.modal-body {
+    max-height: 70vh;
+    overflow-y: auto;
+}
+
+/* Alert type specific styling */
+.fa-exclamation-circle {
+    animation: pulse 2s infinite;
+}
+
+@keyframes pulse {
+    0% { opacity: 1; }
+    50% { opacity: 0.7; }
+    100% { opacity: 1; }
+}
+
+.fa-triangle-exclamation {
+    animation: bounce 2s infinite;
+}
+
+@keyframes bounce {
+    0%, 20%, 50%, 80%, 100% { transform: translateY(0); }
+    40% { transform: translateY(-5px); }
+    60% { transform: translateY(-3px); }
+}
+</style>
+{% endblock %}

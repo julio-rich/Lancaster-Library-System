@@ -1,0 +1,155 @@
+{% extends "base.html" %}
+
+{% block title %}Dashboard - Lancaster University Library{% endblock %}
+
+{% block content %}
+<!-- Hero Section -->
+<div class="hero-section bg-gradient text-white rounded-3 p-5 mb-5">
+    <div class="row align-items-center">
+        <div class="col-lg-8">
+            <h1 class="display-4 fw-bold mb-3">Welcome to Lancaster University Library</h1>
+            <p class="lead mb-4">Your gateway to knowledge and learning. Manage books, members, and loans with our comprehensive library management system.</p>
+            <a href="{{ url_for('books') }}" class="btn btn-light btn-lg me-3">
+                <i class="fas fa-search me-2"></i>Browse Books
+            </a>
+            <a href="{{ url_for('add_book') }}" class="btn btn-outline-light btn-lg">
+                <i class="fas fa-plus me-2"></i>Add New Book
+            </a>
+        </div>
+        <div class="col-lg-4 text-center">
+            <i class="fas fa-book-reader display-1 opacity-75"></i>
+        </div>
+    </div>
+</div>
+
+<!-- Statistics Cards -->
+<div class="row g-4 mb-5">
+    <div class="col-lg-3 col-md-6">
+        <div class="card stat-card h-100">
+            <div class="card-body text-center">
+                <div class="stat-icon bg-primary text-white rounded-circle mx-auto mb-3">
+                    <i class="fas fa-book"></i>
+                </div>
+                <h3 class="fw-bold text-primary">{{ stats.total_books }}</h3>
+                <p class="text-muted mb-0">Total Books</p>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-lg-3 col-md-6">
+        <div class="card stat-card h-100">
+            <div class="card-body text-center">
+                <div class="stat-icon bg-success text-white rounded-circle mx-auto mb-3">
+                    <i class="fas fa-check-circle"></i>
+                </div>
+                <h3 class="fw-bold text-success">{{ stats.available_books }}</h3>
+                <p class="text-muted mb-0">Available Books</p>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-lg-3 col-md-6">
+        <div class="card stat-card h-100">
+            <div class="card-body text-center">
+                <div class="stat-icon bg-info text-white rounded-circle mx-auto mb-3">
+                    <i class="fas fa-users"></i>
+                </div>
+                <h3 class="fw-bold text-info">{{ stats.total_members }}</h3>
+                <p class="text-muted mb-0">Total Members</p>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-lg-3 col-md-6">
+        <div class="card stat-card h-100">
+            <div class="card-body text-center">
+                <div class="stat-icon bg-warning text-white rounded-circle mx-auto mb-3">
+                    <i class="fas fa-handshake"></i>
+                </div>
+                <h3 class="fw-bold text-warning">{{ stats.active_loans }}</h3>
+                <p class="text-muted mb-0">Active Loans</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Quick Actions & Alerts -->
+<div class="row g-4">
+    <div class="col-lg-8">
+        <div class="card h-100">
+            <div class="card-header">
+                <h5 class="card-title mb-0">
+                    <i class="fas fa-bolt me-2"></i>Quick Actions
+                </h5>
+            </div>
+            <div class="card-body">
+                <div class="row g-3">
+                    <div class="col-md-6">
+                        <a href="{{ url_for('loan_book') }}" class="btn btn-outline-primary w-100 p-3">
+                            <i class="fas fa-plus-circle me-2"></i>
+                            <div>New Loan</div>
+                            <small class="text-muted">Issue a book to member</small>
+                        </a>
+                    </div>
+                    <div class="col-md-6">
+                        <a href="{{ url_for('add_member') }}" class="btn btn-outline-success w-100 p-3">
+                            <i class="fas fa-user-plus me-2"></i>
+                            <div>Add Member</div>
+                            <small class="text-muted">Register new member</small>
+                        </a>
+                    </div>
+                    <div class="col-md-6">
+                        <a href="{{ url_for('books') }}" class="btn btn-outline-info w-100 p-3">
+                            <i class="fas fa-search me-2"></i>
+                            <div>Search Books</div>
+                            <small class="text-muted">Find books in catalog</small>
+                        </a>
+                    </div>
+                    <div class="col-md-6">
+                        <a href="{{ url_for('send_reminders') }}" class="btn btn-outline-warning w-100 p-3">
+                            <i class="fas fa-envelope me-2"></i>
+                            <div>Send Reminders</div>
+                            <small class="text-muted">Email overdue notices</small>
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-lg-4">
+        <div class="card h-100">
+            <div class="card-header">
+                <h5 class="card-title mb-0">
+                    <i class="fas fa-exclamation-triangle me-2"></i>Alerts
+                </h5>
+            </div>
+            <div class="card-body">
+                {% if stats.overdue_loans > 0 %}
+                <div class="alert alert-danger" role="alert">
+                    <i class="fas fa-clock me-2"></i>
+                    <strong>{{ stats.overdue_loans }}</strong> books are overdue!
+                    <div class="mt-2">
+                        <a href="{{ url_for('loans') }}" class="btn btn-sm btn-outline-danger">
+                            View Overdue Books
+                        </a>
+                    </div>
+                </div>
+                {% else %}
+                <div class="alert alert-success" role="alert">
+                    <i class="fas fa-check me-2"></i>
+                    No overdue books! Great job managing the library.
+                </div>
+                {% endif %}
+                
+                <div class="text-center mt-3">
+                    <p class="text-muted mb-2">System Status</p>
+                    <span class="badge bg-success fs-6">
+                        <i class="fas fa-circle me-1"></i>Online
+                    </span>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,436 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, user-scalable=yes">
+    <title>{% block title %}Lancaster University Library Management System{% endblock %}</title>
+    
+    <!-- Mobile-First Meta Tags -->
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="LU Library">
+    <meta name="theme-color" content="#ea6666">
+    <meta name="format-detection" content="telephone=no">
+    
+    <!-- PWA Manifest -->
+    <link rel="manifest" href="{{ url_for('static', filename='manifest.json') }}">
+    
+    <!-- Favicon for different devices -->
+    <link rel="icon" type="image/png" sizes="192x192" href="{{ url_for('static', filename='icons/icon-192x192.png') }}">
+    <link rel="icon" type="image/png" sizes="512x512" href="{{ url_for('static', filename='icons/icon-512x512.png') }}">
+    <link rel="apple-touch-icon" href="{{ url_for('static', filename='icons/icon-192x192.png') }}">
+    
+    <!-- Bootstrap CSS with Mobile Optimizations -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- Font Awesome Icons -->
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    
+    <!-- Mobile-First Custom CSS -->
+    <style>
+        /* Mobile-First Base Styles */
+        :root {
+            --mobile-nav-height: 60px;
+            --mobile-padding: 1rem;
+            --touch-target: 44px;
+        }
+        
+        /* Enhanced mobile navigation */
+        .navbar {
+            min-height: var(--mobile-nav-height);
+            padding: 0.5rem 1rem;
+        }
+        
+        .navbar-brand {
+            font-size: 1.1rem;
+            font-weight: 600;
+        }
+        
+        /* Mobile-friendly touch targets */
+        .btn, .nav-link, .dropdown-item {
+            min-height: var(--touch-target);
+            padding: 0.75rem 1rem;
+            display: flex;
+            align-items: center;
+            touch-action: manipulation;
+        }
+        
+        /* Mobile container adjustments */
+        .container {
+            padding-left: var(--mobile-padding);
+            padding-right: var(--mobile-padding);
+        }
+        
+        /* Mobile-optimized cards */
+        .card {
+            border-radius: 0.75rem;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+            margin-bottom: 1rem;
+        }
+        
+        /* Mobile tables - horizontal scroll */
+        .table-responsive {
+            border-radius: 0.5rem;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+        }
+        
+        /* Mobile forms */
+        .form-control, .form-select {
+            min-height: var(--touch-target);
+            font-size: 16px; /* Prevents zoom on iOS */
+            border-radius: 0.5rem;
+        }
+        
+        /* Mobile modal adjustments */
+        .modal-dialog {
+            margin: 0.5rem;
+        }
+        
+        @media (max-width: 576px) {
+            .modal-dialog {
+                margin: 0.25rem;
+            }
+            
+            .modal-xl, .modal-lg {
+                max-width: calc(100vw - 0.5rem);
+            }
+        }
+        
+        /* Mobile-specific utilities */
+        .mobile-hidden {
+            display: none;
+        }
+        
+        @media (min-width: 768px) {
+            .mobile-hidden {
+                display: block;
+            }
+            
+            .desktop-hidden {
+                display: none;
+            }
+        }
+        
+        /* Mobile bottom navigation (for future enhancement) */
+        .mobile-bottom-nav {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            background: white;
+            border-top: 1px solid #dee2e6;
+            padding: 0.5rem;
+            display: none;
+            z-index: 1030;
+        }
+        
+        @media (max-width: 768px) {
+            .mobile-bottom-nav {
+                display: flex;
+            }
+            
+            .main-content {
+                padding-bottom: 70px; /* Account for bottom nav */
+            }
+        }
+        
+        /* Loading spinner for mobile */
+        .mobile-loading {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(255,255,255,0.95);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 9999;
+            display: none;
+        }
+        
+        /* Mobile swipe gestures */
+        .swipe-container {
+            overflow-x: hidden;
+            position: relative;
+        }
+        
+        /* Improved accessibility for mobile */
+        @media (prefers-reduced-motion: reduce) {
+            * {
+                animation-duration: 0.01ms !important;
+                animation-iteration-count: 1 !important;
+                transition-duration: 0.01ms !important;
+            }
+        }
+        
+        /* High contrast mode support */
+        @media (prefers-contrast: high) {
+            .card {
+                border: 2px solid #000;
+            }
+            
+            .btn {
+                border: 2px solid currentColor;
+            }
+        }
+    </style>
+    
+    <!-- Custom CSS -->
+    <link href="{{ url_for('static', filename='css/style.css') }}" rel="stylesheet">
+</head>
+<body>
+    <!-- Navigation -->
+    <nav class="navbar navbar-expand-lg navbar-dark bg-primary">
+        <div class="container">
+            {% if session.user_type == 'student' %}
+                <a class="navbar-brand" href="{{ url_for('student_dashboard') }}">
+                    <i class="fas fa-book-open me-2"></i>Lancaster University library 
+                </a>
+            {% elif session.user_type == 'librarian' %}
+                <a class="navbar-brand" href="{{ url_for('librarian_dashboard') }}">
+                    <i class="fas fa-book-open me-2"></i>Lancaster University library 
+                </a>
+            {% else %}
+                <a class="navbar-brand" href="{{ url_for('login') }}">
+                    <i class="fas fa-book-open me-2"></i>Lancaster University library
+                </a>
+            {% endif %}
+            
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <ul class="navbar-nav me-auto">
+                    {% if session.user_type %}
+                        <li class="nav-item">
+                            {% if session.user_type == 'student' %}
+                                <a class="nav-link" href="{{ url_for('student_dashboard') }}">
+                                    <i class="fas fa-home me-1"></i>Dashboard
+                                </a>
+                            {% elif session.user_type == 'librarian' %}
+                                <a class="nav-link" href="{{ url_for('librarian_dashboard') }}">
+                                    <i class="fas fa-home me-1"></i>Dashboard
+                                </a>
+                            {% else %}
+                                <a class="nav-link" href="{{ url_for('home') }}">
+                                    <i class="fas fa-home me-1"></i>Dashboard
+                                </a>
+                            {% endif %}
+                        </li>
+                        
+                        {% if session.user_type == 'student' %}
+                            <li class="nav-item">
+                                <a class="nav-link" href="{{ url_for('student_catalog') }}">
+                                    <i class="fas fa-book me-1"></i>Catalog
+                                </a>
+                            </li>
+                        {% endif %}
+                        
+                        {% if session.user_type == 'librarian' %}
+                            <li class="nav-item">
+                                <a class="nav-link" href="{{ url_for('books') }}">
+                                    <i class="fas fa-book me-1"></i>Books
+                                </a>
+                            </li>
+                            <li class="nav-item">
+                                <a class="nav-link" href="{{ url_for('members') }}">
+                                    <i class="fas fa-users me-1"></i>Members
+                                </a>
+                            </li>
+                            <li class="nav-item">
+                                <a class="nav-link" href="{{ url_for('loans') }}">
+                                    <i class="fas fa-handshake me-1"></i>Loans
+                                </a>
+                            </li>
+                            <li class="nav-item dropdown">
+                                <a class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown">
+                                    <i class="fas fa-cog me-1"></i>Admin
+                                </a>
+                                <ul class="dropdown-menu">
+                                    <li><a class="dropdown-item" href="{{ url_for('add_book') }}">Add Book</a></li>
+                                    <li><a class="dropdown-item" href="{{ url_for('add_member') }}">Add Member</a></li>
+                                    <li><a class="dropdown-item" href="{{ url_for('loan_book') }}">Loan Book</a></li>
+                                    <li><hr class="dropdown-divider"></li>
+                                    <li><a class="dropdown-item" href="{{ url_for('send_reminders') }}">Send Reminders</a></li>
+                                </ul>
+                            </li>
+                        {% endif %}
+                    {% endif %}
+                </ul>
+                
+                <div class="d-flex align-items-center">
+                    {% if session.user_type %}
+                        <!-- User Info -->
+                        <span class="navbar-text me-3">
+                            <i class="fas fa-user me-1"></i>{{ session.name or 'User' }}
+                        </span>
+                        
+                        <!-- Logout Button -->
+                        <a href="{{ url_for('logout') }}" class="btn btn-outline-light btn-sm me-2">
+                            <i class="fas fa-sign-out-alt me-1"></i>Logout
+                        </a>
+                    {% endif %}
+                    
+                    <!-- Theme Toggle Button -->
+                    <button class="theme-toggle" onclick="toggleTheme()" title="Toggle Dark/Light Mode">
+                        <i class="fas fa-moon"></i>
+                        <i class="fas fa-sun"></i>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Main Content -->
+    <main class="main-content">
+        <div class="container mt-4">
+            <!-- Flash Messages -->
+            {% with messages = get_flashed_messages(with_categories=true) %}
+                {% if messages %}
+                    {% for category, message in messages %}
+                        <div class="alert alert-{{ 'success' if category == 'success' else 'danger' }} alert-dismissible fade show" role="alert">
+                            {{ message }}
+                            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                        </div>
+                    {% endfor %}
+                {% endif %}
+            {% endwith %}
+
+            {% block content %}{% endblock %}
+        </div>
+    </main>
+
+    <!-- Mobile Bottom Navigation (for students) -->
+    {% if session.user_type == 'student' %}
+    <nav class="mobile-bottom-nav">
+        <div class="d-flex justify-content-around">
+            <a href="{{ url_for('student_dashboard') }}" class="btn btn-link text-center p-2 flex-fill">
+                <i class="fas fa-home d-block"></i>
+                <small>Home</small>
+            </a>
+            <a href="{{ url_for('student_catalog') }}" class="btn btn-link text-center p-2 flex-fill">
+                <i class="fas fa-book d-block"></i>
+                <small>Catalog</small>
+            </a>
+            <button onclick="showSettings()" class="btn btn-link text-center p-2 flex-fill border-0 bg-transparent">
+                <i class="fas fa-cog d-block"></i>
+                <small>Settings</small>
+            </button>
+            <a href="{{ url_for('logout') }}" class="btn btn-link text-center p-2 flex-fill">
+                <i class="fas fa-sign-out-alt d-block"></i>
+                <small>Logout</small>
+            </a>
+        </div>
+    </nav>
+    {% endif %}
+    
+    <!-- Mobile Loading Indicator -->
+    <div class="mobile-loading" id="mobileLoading">
+        <div class="text-center">
+            <div class="spinner-border text-primary" role="status" style="width: 3rem; height: 3rem;">
+                <span class="visually-hidden">Loading...</span>
+            </div>
+            <p class="mt-3">Loading...</p>
+        </div>
+    </div>
+
+    <!-- Footer -->
+    <footer class="bg-dark text-white text-center py-3 mt-5">
+        <div class="container">
+            <p class="mb-1">&copy; 2024 Lancaster University Library Management System.</p>
+            <small class="text-muted">Mobile-optimized for your convenience</small>
+        </div>
+    </footer>
+
+    <!-- Scripts -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    
+    <!-- Mobile-specific JavaScript -->
+    <script>
+        // Mobile-specific functionality
+        document.addEventListener('DOMContentLoaded', function() {
+            // Detect mobile device
+            const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+            
+            if (isMobile) {
+                document.body.classList.add('mobile-device');
+                
+                // Add touch feedback
+                document.addEventListener('touchstart', function(e) {
+                    if (e.target.matches('.btn, .card, .list-group-item')) {
+                        e.target.style.transform = 'scale(0.98)';
+                    }
+                });
+                
+                document.addEventListener('touchend', function(e) {
+                    if (e.target.matches('.btn, .card, .list-group-item')) {
+                        setTimeout(() => {
+                            e.target.style.transform = '';
+                        }, 150);
+                    }
+                });
+            }
+            
+            // Mobile loading indicator
+            window.showMobileLoading = function() {
+                document.getElementById('mobileLoading').style.display = 'flex';
+            };
+            
+            window.hideMobileLoading = function() {
+                document.getElementById('mobileLoading').style.display = 'none';
+            };
+            
+            // Add loading to all form submissions on mobile
+            if (isMobile) {
+                document.addEventListener('submit', function(e) {
+                    showMobileLoading();
+                });
+            }
+        });
+        
+        // PWA installation prompt
+        let deferredPrompt;
+        window.addEventListener('beforeinstallprompt', (e) => {
+            e.preventDefault();
+            deferredPrompt = e;
+            
+            // Show install button or prompt
+            const installPrompt = document.createElement('div');
+            installPrompt.className = 'alert alert-info alert-dismissible fade show position-fixed';
+            installPrompt.style.cssText = 'top: 70px; left: 1rem; right: 1rem; z-index: 1040;';
+            installPrompt.innerHTML = `
+                <i class="fas fa-mobile-alt me-2"></i>
+                <strong>Install App:</strong> Add Lancaster Library to your home screen for quick access!
+                <button class="btn btn-sm btn-outline-info ms-2" onclick="installPWA()">Install</button>
+                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+            `;
+            document.body.appendChild(installPrompt);
+            
+            // Auto-hide after 10 seconds
+            setTimeout(() => {
+                if (installPrompt.parentNode) {
+                    installPrompt.remove();
+                }
+            }, 10000);
+        });
+        
+        window.installPWA = function() {
+            if (deferredPrompt) {
+                deferredPrompt.prompt();
+                deferredPrompt.userChoice.then((result) => {
+                    console.log('PWA installation:', result.outcome);
+                    deferredPrompt = null;
+                });
+            }
+        };
+    </script>
+
+    <!-- Your custom JS -->
+    <script src="{{ url_for('static', filename='js/script.js') }}"></script>
+    
+    <!-- Additional JavaScript blocks from child templates -->
+    {% block extra_js %}{% endblock %}
+</body>
+</html>

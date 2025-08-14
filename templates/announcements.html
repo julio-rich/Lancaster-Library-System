@@ -1,0 +1,297 @@
+{% extends "base.html" %}
+
+{% block title %}Announcements - Lancaster University Library{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <div>
+                    <h2>
+                        <i class="fas fa-bullhorn me-3"></i>System Announcements
+                    </h2>
+                    <p class="text-muted">Important notifications and updates from the library</p>
+                </div>
+                <div>
+                    {% if session.user_type == 'librarian' %}
+                    <a href="{{ url_for('create_announcement') }}" class="btn btn-primary me-2">
+                        <i class="fas fa-plus-circle me-2"></i>Create Announcement
+                    </a>
+                    {% endif %}
+                    <a href="{{ url_for('librarian_dashboard' if session.user_type == 'librarian' else 'student_dashboard') }}" class="btn btn-outline-secondary">
+                        <i class="fas fa-arrow-left me-2"></i>Back to Dashboard
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Announcements List -->
+    <div class="row">
+        <div class="col-12">
+            {% if announcements %}
+            <div class="row g-4">
+                {% for announcement in announcements %}
+                <div class="col-md-6">
+                    <div class="card announcement-card h-100 {% if announcement[6] == 'high' %}border-danger{% elif announcement[6] == 'medium' %}border-warning{% else %}border-info{% endif %}">
+                        <div class="card-header {% if announcement[6] == 'high' %}bg-danger text-white{% elif announcement[6] == 'medium' %}bg-warning text-dark{% else %}bg-info text-white{% endif %}">
+                            <div class="d-flex justify-content-between align-items-center">
+                                <h6 class="mb-0">
+                                    <i class="fas fa-megaphone me-2"></i>{{ announcement[1] }}
+                                </h6>
+                                <div>
+                                    <span class="badge {% if announcement[6] == 'high' %}bg-light text-danger{% elif announcement[6] == 'medium' %}bg-dark text-warning{% else %}bg-light text-info{% endif %}">
+                                        {{ announcement[6]|title }} Priority
+                                    </span>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="card-body">
+                            <div class="announcement-content mb-3">
+                                {{ announcement[2]|replace('\n', '<br>')|safe }}
+                            </div>
+                            
+                            <div class="announcement-meta">
+                                <div class="row g-2 small text-muted">
+                                    <div class="col-sm-6">
+                                        <i class="fas fa-user me-1"></i>
+                                        <strong>{{ announcement[8] if announcement[8] else 'System' }}</strong>
+                                    </div>
+                                    <div class="col-sm-6">
+                                        <i class="fas fa-calendar me-1"></i>
+                                        {{ announcement[4] }}
+                                    </div>
+                                    {% if announcement[5] %}
+                                    <div class="col-12">
+                                        <i class="fas fa-clock me-1"></i>
+                                        Expires: {{ announcement[5] }}
+                                    </div>
+                                    {% endif %}
+                                    <div class="col-12">
+                                        <i class="fas fa-users me-1"></i>
+                                        Target: {{ announcement[7]|title if announcement[7] != 'all' else 'All Users' }}
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        {% if session.user_type == 'librarian' %}
+                        <div class="card-footer bg-light">
+                            <div class="d-flex gap-2">
+                                <button class="btn btn-sm btn-outline-primary" 
+                                        onclick="editAnnouncement({{ announcement[0] }}, '{{ announcement[1] }}', '{{ announcement[2] }}', '{{ announcement[6] }}', '{{ announcement[7] }}')">
+                                    <i class="fas fa-edit me-1"></i>Edit
+                                </button>
+                                <button class="btn btn-sm btn-outline-danger" 
+                                        onclick="deactivateAnnouncement({{ announcement[0] }}, '{{ announcement[1] }}')">
+                                    <i class="fas fa-times me-1"></i>Deactivate
+                                </button>
+                            </div>
+                        </div>
+                        {% endif %}
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+            {% else %}
+            <div class="text-center py-5">
+                <i class="fas fa-bullhorn fa-4x text-muted mb-4"></i>
+                <h3>No Announcements</h3>
+                <p class="text-muted mb-4">There are currently no active announcements.</p>
+                {% if session.user_type == 'librarian' %}
+                <a href="{{ url_for('create_announcement') }}" class="btn btn-primary">
+                    <i class="fas fa-plus-circle me-2"></i>Create Your First Announcement
+                </a>
+                {% endif %}
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<!-- Edit Announcement Modal (for librarians) -->
+{% if session.user_type == 'librarian' %}
+<div class="modal fade" id="editAnnouncementModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">
+                    <i class="fas fa-edit me-2"></i>Edit Announcement
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <form method="POST" action="{{ url_for('update_announcement') }}">
+                <div class="modal-body">
+                    <input type="hidden" id="editAnnouncementId" name="announcement_id">
+                    <div class="mb-3">
+                        <label for="editTitle" class="form-label">Title <span class="text-danger">*</span></label>
+                        <input type="text" class="form-control" id="editTitle" name="title" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="editContent" class="form-label">Content <span class="text-danger">*</span></label>
+                        <textarea class="form-control" id="editContent" name="content" rows="5" required></textarea>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-6">
+                            <label for="editPriority" class="form-label">Priority</label>
+                            <select class="form-select" id="editPriority" name="priority">
+                                <option value="low">Low</option>
+                                <option value="normal" selected>Normal</option>
+                                <option value="medium">Medium</option>
+                                <option value="high">High</option>
+                            </select>
+                        </div>
+                        <div class="col-md-6">
+                            <label for="editTargetAudience" class="form-label">Target Audience</label>
+                            <select class="form-select" id="editTargetAudience" name="target_audience">
+                                <option value="all">All Users</option>
+                                <option value="student">Students</option>
+                                <option value="librarian">Librarians</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="mb-3 mt-3">
+                        <label for="editExpiryDate" class="form-label">Expiry Date (Optional)</label>
+                        <input type="date" class="form-control" id="editExpiryDate" name="expiry_date">
+                        <div class="form-text">Leave empty for no expiration</div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-primary">
+                        <i class="fas fa-save me-2"></i>Update Announcement
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endif %}
+
+<script>
+function editAnnouncement(id, title, content, priority, targetAudience) {
+    document.getElementById('editAnnouncementId').value = id;
+    document.getElementById('editTitle').value = title;
+    document.getElementById('editContent').value = content;
+    document.getElementById('editPriority').value = priority;
+    document.getElementById('editTargetAudience').value = targetAudience;
+    
+    const modal = new bootstrap.Modal(document.getElementById('editAnnouncementModal'));
+    modal.show();
+}
+
+function deactivateAnnouncement(id, title) {
+    if (confirm(`Are you sure you want to deactivate the announcement "${title}"?`)) {
+        fetch(`/deactivate_announcement/${id}`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            }
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                location.reload();
+            } else {
+                alert('Error deactivating announcement: ' + data.error);
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            alert('An error occurred while deactivating the announcement.');
+        });
+    }
+}
+
+// Auto-refresh announcements every 5 minutes for students
+{% if session.user_type == 'student' %}
+setInterval(() => {
+    location.reload();
+}, 300000);
+{% endif %}
+
+// Mark announcements as read for better UX
+document.addEventListener('DOMContentLoaded', function() {
+    const announcementCards = document.querySelectorAll('.announcement-card');
+    
+    announcementCards.forEach(card => {
+        const observer = new IntersectionObserver((entries) => {
+            entries.forEach(entry => {
+                if (entry.isIntersecting) {
+                    // Mark as viewed (could send to server to track read status)
+                    entry.target.classList.add('viewed');
+                }
+            });
+        });
+        
+        observer.observe(card);
+    });
+});
+</script>
+
+<style>
+.announcement-card {
+    border-left-width: 4px !important;
+    transition: all 0.3s ease;
+}
+
+.announcement-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+.announcement-card.viewed {
+    opacity: 0.95;
+}
+
+.announcement-content {
+    line-height: 1.6;
+    max-height: 300px;
+    overflow-y: auto;
+}
+
+.announcement-meta {
+    border-top: 1px solid #e9ecef;
+    padding-top: 0.75rem;
+    margin-top: 0.75rem;
+}
+
+.card {
+    border: none;
+    border-radius: 8px;
+}
+
+.card-header {
+    border-bottom: 1px solid rgba(0, 0, 0, 0.125);
+    font-weight: 600;
+}
+
+.badge {
+    font-size: 0.75em;
+}
+
+/* Priority-based styling */
+.border-danger {
+    border-color: #dc3545 !important;
+}
+
+.border-warning {
+    border-color: #ffc107 !important;
+}
+
+.border-info {
+    border-color: #0dcaf0 !important;
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+    .announcement-content {
+        max-height: 200px;
+    }
+    
+    .card-body {
+        padding: 1rem;
+    }
+}
+</style>
+{% endblock %}
